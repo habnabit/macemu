@@ -63,8 +63,10 @@
 #include "video_blit.h"
 #include "vm_alloc.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
+
+#include "app.hpp"
 
 // Supported video modes
 using std::vector;
@@ -1541,6 +1543,11 @@ static bool is_ctrl_down(SDL_keysym const & ks)
 	return ctrl_down || (ks.mod & KMOD_CTRL);
 }
 
+static bool is_shift_down(SDL_keysym const & ks)
+{
+	return ks.mod & KMOD_SHIFT;
+}
+
 
 /*
  *  Translate key event to Mac keycode, returns -1 if no keycode was found
@@ -1640,14 +1647,25 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 
 	case SDLK_ESCAPE: if (is_ctrl_down(ks)) {if (!key_down) { quit_full_screen = true; emerg_quit = true; } return -2;} else return 0x35;
 
-	case SDLK_F1: if (is_ctrl_down(ks)) {if (!key_down) SysMountFirstFloppy(); return -2;} else return 0x7a;
-	case SDLK_F2: return 0x78;
-	case SDLK_F3: return 0x63;
-	case SDLK_F4: return 0x76;
-	case SDLK_F5: if (is_ctrl_down(ks)) {if (!key_down) drv->toggle_mouse_grab(); return -2;} else return 0x60;
-	case SDLK_F6: return 0x61;
-	case SDLK_F7: return 0x62;
-	case SDLK_F8: return 0x64;
+#define SAVESTATE(n) \
+		if (!key_down) {												\
+			if (is_shift_down(ks)) {									\
+				D(bug("saving %d\n", (n)));								\
+				the_app->save_state(n);									\
+			} else {													\
+				D(bug("loading %d\n", (n)));							\
+				the_app->load_state(n);									\
+			}															\
+		}																\
+		return -2;
+	case SDLK_F1: SAVESTATE(0)
+	case SDLK_F2: SAVESTATE(1)
+	case SDLK_F3: SAVESTATE(2)
+	case SDLK_F4: SAVESTATE(3)
+	case SDLK_F5: SAVESTATE(4)
+	case SDLK_F6: SAVESTATE(5)
+	case SDLK_F7: SAVESTATE(6)
+	case SDLK_F8: SAVESTATE(7)
 	case SDLK_F9: return 0x65;
 	case SDLK_F10: return 0x6d;
 	case SDLK_F11: return 0x67;
@@ -2093,7 +2111,7 @@ static void video_refresh_dga_vosf(void)
 {
 	// Quit DGA mode if requested
 	possibly_quit_dga_mode();
-	
+
 	// Update display (VOSF variant)
 	static int tick_counter = 0;
 	if (++tick_counter >= frame_skip) {
@@ -2111,7 +2129,7 @@ static void video_refresh_window_vosf(void)
 {
 	// Ungrab mouse if requested
 	possibly_ungrab_mouse();
-	
+
 	// Update display (VOSF variant)
 	static int tick_counter = 0;
 	if (++tick_counter >= frame_skip) {

@@ -31,6 +31,7 @@ enum {
 	SPCFLAG_CPU_HANDLE_INTERRUPT	= 1 << 2,	// Call user interrupt handler
 	SPCFLAG_CPU_ENTER_MON			= 1 << 3,	// Enter cxmon
 	SPCFLAG_JIT_EXEC_RETURN			= 1 << 4,	// Return from compiled code
+	SPCFLAG_HANDLE_SAVESTATE        = 1 << 5,   // Save/load state
 };
 
 class basic_spcflags

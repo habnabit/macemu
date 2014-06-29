@@ -29,7 +29,7 @@
 #include "cpu/ppc/ppc-bitfields.hpp"
 #include "cpu/ppc/ppc-blockinfo.hpp"
 #include "cpu/ppc/ppc-registers.hpp"
-#if PPC_ENABLE_JIT 
+#if PPC_ENABLE_JIT
 #include "cpu/ppc/ppc-jit.hpp"
 #endif
 #include "cpu/ppc/ppc-instructions.hpp"
@@ -40,6 +40,7 @@ class powerpc_cpu
 	: public basic_cpu
 #endif
 {
+protected:
 	// NOTE: PowerPC registers structure shall be aligned on 16-byte
 	// boundaries for the AltiVec registers to be used in native code
 	// with aligned load/stores.
@@ -288,7 +289,7 @@ public:
 
 	// Interrupts handling
 	void trigger_interrupt();
-	
+
 	// Set VALUE to register ID
 	void set_register(int id, any_register const & value);
 

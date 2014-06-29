@@ -40,6 +40,8 @@
 #define DEBUG 0
 #include "debug.h"
 
+#include "app.hpp"
+
 #if PPC_PROFILE_GENERIC_CALLS
 uint32 powerpc_cpu::generic_calls_count[PPC_I(MAX)];
 static int generic_calls_ids[PPC_I(MAX)];
@@ -521,6 +523,10 @@ bool powerpc_cpu::check_spcflags()
 	if (spcflags().test(SPCFLAG_CPU_TRIGGER_INTERRUPT)) {
 		spcflags().clear(SPCFLAG_CPU_TRIGGER_INTERRUPT);
 		spcflags().set(SPCFLAG_CPU_HANDLE_INTERRUPT);
+	}
+	if (spcflags().test(SPCFLAG_HANDLE_SAVESTATE)) {
+		spcflags().clear(SPCFLAG_HANDLE_SAVESTATE);
+		the_app->do_save_load();
 	}
 #endif
 	if (spcflags().test(SPCFLAG_CPU_ENTER_MON)) {

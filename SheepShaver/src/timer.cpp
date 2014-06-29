@@ -62,7 +62,7 @@ static TMDesc *tmDescList;
 #ifdef PRECISE_TIMING_BEOS
 static thread_id timer_thread = -1;
 static bool thread_active = true;
-static const tm_time_t wakeup_time_max = 0x7fffffffffffffff; 
+static const tm_time_t wakeup_time_max = 0x7fffffffffffffff;
 static volatile tm_time_t wakeup_time = wakeup_time_max;
 static sem_id wakeup_time_sem = -1;
 static int32 timer_func(void *arg);
@@ -272,7 +272,7 @@ void TimerInit(void)
 	resume_thread(timer_thread);
 #elif PRECISE_TIMING_MACH
 	pthread_t pthread;
-	
+
 	host_get_clock_service(mach_host_self(), REALTIME_CLOCK, &system_clock);
 	semaphore_create(mach_task_self(), &wakeup_time_sem, SYNC_POLICY_FIFO, 1);
 
@@ -558,13 +558,13 @@ static void *timer_func(void *arg)
 {
 	timer_thread = mach_thread_self();
 	timer_thread_active = true;
-	
+
 	while (timer_thread_active) {
 		clock_sleep(system_clock, TIME_ABSOLUTE, wakeup_time, NULL);
 		semaphore_wait(wakeup_time_sem);
-	   
+
 		tm_time_t system_time;
-		
+
 		timer_current_time(system_time);
 		if (timer_cmp_time(wakeup_time, system_time) < 0) {
 			wakeup_time = wakeup_time_max;
