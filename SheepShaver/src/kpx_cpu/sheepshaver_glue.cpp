@@ -62,6 +62,8 @@ extern "C" {
 #include "dis-asm.h"
 }
 
+#include "app.hpp"
+
 // Emulation time statistics
 #ifndef EMUL_TIME_STATS
 #define EMUL_TIME_STATS 0
@@ -130,52 +132,6 @@ static uint8 *native_op_trampoline;
 enum {
 	PPC_I(SHEEP) = PPC_I(MAX),
 	PPC_I(SHEEP_MAX)
-};
-
-class sheepshaver_cpu
-	: public powerpc_cpu
-{
-	void init_decoder();
-	void execute_sheep(uint32 opcode);
-
-public:
-
-	// Constructor
-	sheepshaver_cpu();
-
-	// CR & XER accessors
-	uint32 get_cr() const		{ return cr().get(); }
-	void set_cr(uint32 v)		{ cr().set(v); }
-	uint32 get_xer() const		{ return xer().get(); }
-	void set_xer(uint32 v)		{ xer().set(v); }
-
-	// Execute NATIVE_OP routine
-	void execute_native_op(uint32 native_op);
-
-	// Execute EMUL_OP routine
-	void execute_emul_op(uint32 emul_op);
-
-	// Execute 68k routine
-	void execute_68k(uint32 entry, M68kRegisters *r);
-
-	// Execute ppc routine
-	void execute_ppc(uint32 entry);
-
-	// Execute MacOS/PPC code
-	uint32 execute_macos_code(uint32 tvect, int nargs, uint32 const *args);
-
-#if PPC_ENABLE_JIT
-	// Compile one instruction
-	virtual int compile1(codegen_context_t & cg_context);
-#endif
-	// Resource manager thunk
-	void get_resource(uint32 old_get_resource);
-
-	// Handle MacOS interrupt
-	void interrupt(uint32 entry);
-
-	// Make sure the SIGSEGV handler can access CPU registers
-	friend sigsegv_return_t sigsegv_handler(sigsegv_info_t *sip);
 };
 
 sheepshaver_cpu::sheepshaver_cpu()
@@ -569,7 +525,7 @@ void sheepshaver_cpu::execute_68k(uint32 entry, M68kRegisters *r)
 	// Push return address (points to EXEC_RETURN opcode) on stack
 	gpr(1) -= 4;
 	WriteMacInt32(gpr(1), XLM_EXEC_RETURN_OPCODE);
-	
+
 	// Rentering 68k emulator
 	WriteMacInt32(XLM_RUN_MODE, MODE_68K);
 
@@ -709,25 +665,22 @@ inline void sheepshaver_cpu::get_resource(uint32 old_get_resource)
  *		SheepShaver CPU engine interface
  **/
 
-// PowerPC CPU emulator
-static sheepshaver_cpu *ppc_cpu = NULL;
-
 void FlushCodeCache(uintptr start, uintptr end)
 {
 	D(bug("FlushCodeCache(%08x, %08x)\n", start, end));
-	ppc_cpu->invalidate_cache_range(start, end);
+	the_app->ppc_cpu->invalidate_cache_range(start, end);
 }
 
 // Dump PPC registers
-static void dump_registers(void)
+void dump_registers(void)
 {
-	ppc_cpu->dump_registers();
+	the_app->ppc_cpu->dump_registers();
 }
 
 // Dump log
-static void dump_log(void)
+void dump_log(void)
 {
-	ppc_cpu->dump_log();
+	the_app->ppc_cpu->dump_log();
 }
 
 static int read_mem(bfd_vma memaddr, bfd_byte *myaddr, int length, struct disassemble_info *info)
@@ -768,9 +721,9 @@ sigsegv_return_t sigsegv_handler(sigsegv_info_t *sip)
 		return SIGSEGV_RETURN_SKIP_INSTRUCTION;
 
 	// Get program counter of target CPU
-	sheepshaver_cpu * const cpu = ppc_cpu;
+	sheepshaver_cpu * const cpu = the_app->ppc_cpu;
 	const uint32 pc = cpu->pc();
-	
+
 	// Fault in Mac ROM or RAM?
 	bool mac_fault = (pc >= ROMBase) && (pc < (ROMBase + ROM_AREA_SIZE)) || (pc >= RAMBase) && (pc < (RAMBase + RAMSize)) || (pc >= DR_CACHE_BASE && pc < (DR_CACHE_BASE + DR_CACHE_SIZE));
 	if (mac_fault) {
@@ -778,21 +731,21 @@ sigsegv_return_t sigsegv_handler(sigsegv_info_t *sip)
 		// "VM settings" during MacOS 8 installation
 		if (pc == ROMBase + 0x488160 && cpu->gpr(20) == 0xf8000000)
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
-	
+
 		// MacOS 8.5 installation
 		else if (pc == ROMBase + 0x488140 && cpu->gpr(16) == 0xf8000000)
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
-	
+
 		// MacOS 8 serial drivers on startup
 		else if (pc == ROMBase + 0x48e080 && (cpu->gpr(8) == 0xf3012002 || cpu->gpr(8) == 0xf3012000))
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
-	
+
 		// MacOS 8.1 serial drivers on startup
 		else if (pc == ROMBase + 0x48c5e0 && (cpu->gpr(20) == 0xf3012002 || cpu->gpr(20) == 0xf3012000))
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
 		else if (pc == ROMBase + 0x4a10a0 && (cpu->gpr(20) == 0xf3012002 || cpu->gpr(20) == 0xf3012000))
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
-	
+
 		// MacOS 8.6 serial drivers on startup (with DR Cache and OldWorld ROM)
 		else if ((pc - DR_CACHE_BASE) < DR_CACHE_SIZE && (cpu->gpr(16) == 0xf3012002 || cpu->gpr(16) == 0xf3012000))
 			return SIGSEGV_RETURN_SKIP_INSTRUCTION;
@@ -815,7 +768,7 @@ sigsegv_return_t sigsegv_handler(sigsegv_info_t *sip)
 	fprintf(stderr, "  pc %p\n", sigsegv_get_fault_instruction_address(sip));
 	fprintf(stderr, "  ea %p\n", sigsegv_get_fault_address(sip));
 	dump_registers();
-	ppc_cpu->dump_log();
+	cpu->dump_log();
 	dump_disassembly(pc, 8, 8);
 
 	enter_mon();
@@ -828,7 +781,7 @@ sigsegv_return_t sigsegv_handler(sigsegv_info_t *sip)
  *  Initialize CPU emulation
  */
 
-void init_emul_ppc(void)
+void sheepshaver_state::init_emul_ppc(void)
 {
 	// Get pointer to KernelData in host address space
 	kernel_data = (KernelData *)Mac2HostAddr(KERNEL_DATA_BASE);
@@ -854,7 +807,7 @@ void init_emul_ppc(void)
  *  Deinitialize emulation
  */
 
-void exit_emul_ppc(void)
+void sheepshaver_state::exit_emul_ppc(void)
 {
 #if EMUL_TIME_STATS
 	clock_t emul_end_time = clock();
@@ -903,7 +856,7 @@ void init_emul_op_trampolines(basic_dyngen & dg)
 	// NativeOp
 	native_op_trampoline = dg.gen_start();
 	func = (func_t)nv_mem_fun(&sheepshaver_cpu::execute_native_op).ptr();
-	dg.gen_invoke_CPU_T0(func);	
+	dg.gen_invoke_CPU_T0(func);
 	dg.gen_exec_return();
 	dg.gen_end();
 
@@ -916,11 +869,8 @@ void init_emul_op_trampolines(basic_dyngen & dg)
  *  Emulation loop
  */
 
-void emul_ppc(uint32 entry)
+void sheepshaver_state::emul_ppc(uint32 entry)
 {
-#if 0
-	ppc_cpu->start_log();
-#endif
 	// start emulation loop and enable code translation or caching
 	ppc_cpu->execute(entry);
 }
@@ -932,13 +882,9 @@ void emul_ppc(uint32 entry)
 void TriggerInterrupt(void)
 {
 	idle_resume();
-#if 0
-  WriteMacInt32(0x16a, ReadMacInt32(0x16a) + 1);
-#else
   // Trigger interrupt to main cpu only
-  if (ppc_cpu)
-	  ppc_cpu->trigger_interrupt();
-#endif
+  if (the_app && the_app->ppc_cpu)
+	  the_app->ppc_cpu->trigger_interrupt();
 }
 
 void HandleInterrupt(powerpc_registers *r)
@@ -964,7 +910,7 @@ void HandleInterrupt(powerpc_registers *r)
 		WriteMacInt16(tswap32(kernel_data->v[0x67c >> 2]), 1);
 		r->cr.set(r->cr.get() | tswap32(kernel_data->v[0x674 >> 2]));
 		break;
-    
+
 #if INTERRUPTS_IN_NATIVE_MODE
 	case MODE_NATIVE:
 		// 68k emulator inactive, in nanokernel?
@@ -975,17 +921,17 @@ void HandleInterrupt(powerpc_registers *r)
 			WriteMacInt32(tswap32(kernel_data->v[0x658 >> 2]) + 0xdc,
 						  ReadMacInt32(tswap32(kernel_data->v[0x658 >> 2]) + 0xdc)
 						  | tswap32(kernel_data->v[0x674 >> 2]));
-      
+
 			// Execute nanokernel interrupt routine (this will activate the 68k emulator)
 			DisableInterrupt();
 			if (ROMType == ROMTYPE_NEWWORLD)
-				ppc_cpu->interrupt(ROMBase + 0x312b1c);
+				the_app->ppc_cpu->interrupt(ROMBase + 0x312b1c);
 			else
-				ppc_cpu->interrupt(ROMBase + 0x312a3c);
+				the_app->ppc_cpu->interrupt(ROMBase + 0x312a3c);
 		}
 		break;
 #endif
-    
+
 #if INTERRUPTS_IN_EMUL_OP_MODE
 	case MODE_EMUL_OP:
 		// 68k emulator active, within EMUL_OP routine, execute 68k interrupt routine directly when interrupt level is 0
@@ -1166,7 +1112,7 @@ void sheepshaver_cpu::execute_native_op(uint32 selector)
 
 void Execute68k(uint32 pc, M68kRegisters *r)
 {
-	ppc_cpu->execute_68k(pc, r);
+	the_app->ppc_cpu->execute_68k(pc, r);
 }
 
 /*
@@ -1189,47 +1135,47 @@ void Execute68kTrap(uint16 trap, M68kRegisters *r)
 
 uint32 call_macos(uint32 tvect)
 {
-	return ppc_cpu->execute_macos_code(tvect, 0, NULL);
+	return the_app->ppc_cpu->execute_macos_code(tvect, 0, NULL);
 }
 
 uint32 call_macos1(uint32 tvect, uint32 arg1)
 {
 	const uint32 args[] = { arg1 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos2(uint32 tvect, uint32 arg1, uint32 arg2)
 {
 	const uint32 args[] = { arg1, arg2 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos3(uint32 tvect, uint32 arg1, uint32 arg2, uint32 arg3)
 {
 	const uint32 args[] = { arg1, arg2, arg3 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos4(uint32 tvect, uint32 arg1, uint32 arg2, uint32 arg3, uint32 arg4)
 {
 	const uint32 args[] = { arg1, arg2, arg3, arg4 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos5(uint32 tvect, uint32 arg1, uint32 arg2, uint32 arg3, uint32 arg4, uint32 arg5)
 {
 	const uint32 args[] = { arg1, arg2, arg3, arg4, arg5 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos6(uint32 tvect, uint32 arg1, uint32 arg2, uint32 arg3, uint32 arg4, uint32 arg5, uint32 arg6)
 {
 	const uint32 args[] = { arg1, arg2, arg3, arg4, arg5, arg6 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
 
 uint32 call_macos7(uint32 tvect, uint32 arg1, uint32 arg2, uint32 arg3, uint32 arg4, uint32 arg5, uint32 arg6, uint32 arg7)
 {
 	const uint32 args[] = { arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
-	return ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
+	return the_app->ppc_cpu->execute_macos_code(tvect, sizeof(args)/sizeof(args[0]), args);
 }
