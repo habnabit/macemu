@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <errno.h>
+#include <strings.h>
 #include "app.hpp"
 
 
-static void read_exactly(void *dest, int fd, size_t length)
+void read_exactly(void *dest, int fd, size_t length)
 {
 	ssize_t just_read;
 	char *dest_c = (char *)dest;
@@ -19,7 +20,7 @@ static void read_exactly(void *dest, int fd, size_t length)
 	}
 }
 
-static void write_exactly(void *src, int fd, size_t length)
+void write_exactly(void *src, int fd, size_t length)
 {
 	ssize_t just_wrote;
 	char *src_c = (char *)src;
@@ -62,6 +63,7 @@ void sheepshaver_state::do_save_load(void)
 		Mac2Host_memcpy(buf, 0, RAMSize);
 		write_exactly(buf, fd, RAMSize);
 		write_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		save_descs(fd);
 	} else if (save_op == OP_LOAD_STATE) {
 		if ((fd = open(filename, O_RDONLY)) < 0) {
 			perror("do_save_load: open");
@@ -69,6 +71,7 @@ void sheepshaver_state::do_save_load(void)
 		}
 		read_exactly(buf, fd, RAMSize);
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		load_descs(fd);
 		Host2Mac_memcpy(0, buf, RAMSize);
 		ppc_cpu->invalidate_cache();
 	}

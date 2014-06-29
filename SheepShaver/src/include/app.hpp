@@ -80,6 +80,11 @@ public:
 	TMDesc *find_desc(uint32);
 	void add_desc(uint32);
 	void clear_descs(void);
+	void dump_descs(void);
+	void save_descs(int);
+	void load_descs(int);
 };
 
 extern sheepshaver_state *the_app;
+void read_exactly(void *, int, size_t);
+void write_exactly(void *, int, size_t);

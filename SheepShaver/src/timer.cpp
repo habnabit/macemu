@@ -119,8 +119,7 @@ inline void sheepshaver_state::add_desc(uint32 task)
 	tmDescList = desc;
 }
 
-
-inline void sheepshaver_state::clear_descs(void)
+void sheepshaver_state::clear_descs(void)
 {
 	TMDesc *desc = tmDescList;
 	while (desc) {
@@ -129,6 +128,13 @@ inline void sheepshaver_state::clear_descs(void)
 		desc = next;
 	}
 	tmDescList = NULL;
+}
+
+void sheepshaver_state::dump_descs(void)
+{
+	for (TMDesc *d = tmDescList; d; d = d->next) {
+		printf("desc: task %08x wakeup %u next %p\n", d->task, timer_host2mac_time(d->wakeup), d->next);
+	}
 }
 
 
@@ -265,6 +271,46 @@ static void timer_thread_resume(void)
 		pthread_kill(timer_thread, SIGRESUME);
 	}
 	pthread_mutex_unlock(&suspend_count_lock);
+}
+
+void sheepshaver_state::save_descs(int fd)
+{
+	TMDesc desc;
+	bzero(&desc, sizeof desc);
+	for (TMDesc *cur = tmDescList; cur; cur = cur->next) {
+		write_exactly(cur, fd, sizeof *cur);
+	}
+	write_exactly(&desc, fd, sizeof desc);
+}
+
+void sheepshaver_state::load_descs(int fd)
+{
+	TMDesc *prev = NULL, *first = NULL, *cur;
+	timer_thread_suspend();
+	pthread_mutex_lock(&wakeup_time_lock);
+	clear_descs();
+	while (1) {
+		cur = new TMDesc;
+		read_exactly(cur, fd, sizeof *cur);
+		if (!cur->task && !cur->next) {
+			delete cur;
+			break;
+		}
+		if (prev) {
+			prev->next = cur;
+		}
+		if (!first) {
+			first = cur;
+		}
+		prev = cur;
+	}
+	if (prev) {
+		prev->next = NULL;
+	}
+	tmDescList = first;
+	pthread_mutex_unlock(&wakeup_time_lock);
+	timer_thread_resume();
+	assert(suspend_count == 0);
 }
 #endif
 
