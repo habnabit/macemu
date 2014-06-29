@@ -1,6 +1,7 @@
 #include "sysdeps.h"
 #include "cpu_emulation.h"
 #include "sigsegv.h"
+#include "timer.h"
 #include "cpu/ppc/ppc-cpu.hpp"
 
 
@@ -73,6 +74,12 @@ public:
 	void save_state(int);
 	void load_state(int);
 	void do_save_load(void);
+
+	TMDesc *tmDescList;
+	void free_desc(TMDesc *);
+	TMDesc *find_desc(uint32);
+	void add_desc(uint32);
+	void clear_descs(void);
 };
 
 extern sheepshaver_state *the_app;

@@ -46,4 +46,11 @@ extern int32 timer_host2mac_time(tm_time_t hosttime);
 extern void idle_wait(void);
 extern void idle_resume(void);
 
+// Array of additional info for each installed TMTask
+struct TMDesc {
+	uint32 task;		// Mac address of associated TMTask
+	tm_time_t wakeup;	// Time this task is scheduled for execution
+	TMDesc *next;
+};
+
 #endif

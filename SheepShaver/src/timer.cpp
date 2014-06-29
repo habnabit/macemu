@@ -36,6 +36,8 @@
 #define DEBUG 0
 #include "debug.h"
 
+#include "app.hpp"
+
 
 #define TM_QUEUE 0			// Enable TMQueue management (doesn't work)
 
@@ -47,16 +49,6 @@ enum {	// TMTask struct
 	tmWakeUp = 14,
 	tmReserved = 18
 };
-
-
-// Array of additional info for each installed TMTask
-struct TMDesc {
-	uint32 task;		// Mac address of associated TMTask
-	tm_time_t wakeup;	// Time this task is scheduled for execution
-	TMDesc *next;
-};
-
-static TMDesc *tmDescList;
 
 #if PRECISE_TIMING
 #ifdef PRECISE_TIMING_BEOS
@@ -88,7 +80,7 @@ static void *timer_func(void *arg);
 #endif
 
 
-inline static void free_desc(TMDesc *desc)
+inline void sheepshaver_state::free_desc(TMDesc *desc)
 {
 	if (desc == tmDescList) {
 		tmDescList = desc->next;
@@ -107,7 +99,7 @@ inline static void free_desc(TMDesc *desc)
  *  Find descriptor associated with given TMTask
  */
 
-inline static TMDesc *find_desc(uint32 tm)
+inline TMDesc *sheepshaver_state::find_desc(uint32 tm)
 {
 	TMDesc *desc = tmDescList;
 	while (desc) {
@@ -118,6 +110,27 @@ inline static TMDesc *find_desc(uint32 tm)
 	}
 	return NULL;
 }
+
+inline void sheepshaver_state::add_desc(uint32 task)
+{
+	TMDesc *desc = new TMDesc;
+	desc->task = task;
+	desc->next = tmDescList;
+	tmDescList = desc;
+}
+
+
+inline void sheepshaver_state::clear_descs(void)
+{
+	TMDesc *desc = tmDescList;
+	while (desc) {
+		TMDesc *next = desc->next;
+		delete desc;
+		desc = next;
+	}
+	tmDescList = NULL;
+}
+
 
 
 /*
@@ -320,13 +333,7 @@ void TimerExit(void)
 
 void TimerReset(void)
 {
-	TMDesc *desc = tmDescList;
-	while (desc) {
-		TMDesc *next = desc->next;
-		delete desc;
-		desc = next;
-	}
-	tmDescList = NULL;
+	the_app->clear_descs();
 }
 
 
@@ -338,13 +345,10 @@ int16 InsTime(uint32 tm, uint16 trap)
 {
 	D(bug("InsTime %08lx, trap %04x\n", tm, trap));
 	WriteMacInt16((uint32)tm + qType, ReadMacInt16((uint32)tm + qType) & 0x1fff | (trap << 4) & 0x6000);
-	if (find_desc(tm))
+	if (the_app->find_desc(tm))
 		printf("WARNING: InsTime(%08lx): Task re-inserted\n", tm);
 	else {
-		TMDesc *desc = new TMDesc;
-		desc->task = tm;
-		desc->next = tmDescList;
-		tmDescList = desc;
+		the_app->add_desc(tm);
 	}
 	return 0;
 }
@@ -359,7 +363,7 @@ int16 RmvTime(uint32 tm)
 	D(bug("RmvTime %08lx\n", tm));
 
 	// Find descriptor
-	TMDesc *desc = find_desc(tm);
+	TMDesc *desc = the_app->find_desc(tm);
 	if (!desc) {
 		printf("WARNING: RmvTime(%08lx): Descriptor not found\n", tm);
 		return 0;
@@ -386,7 +390,7 @@ int16 RmvTime(uint32 tm)
 #if PRECISE_TIMING
 		// Look for next task to be called and set wakeup_time
 		wakeup_time = wakeup_time_max;
-		for (TMDesc *d = tmDescList; d; d = d->next)
+		for (TMDesc *d = the_app->tmDescList; d; d = d->next)
 			if ((ReadMacInt16(d->task + qType) & 0x8000))
 				if (timer_cmp_time(d->wakeup, wakeup_time) < 0)
 					wakeup_time = d->wakeup;
@@ -420,7 +424,7 @@ int16 RmvTime(uint32 tm)
 #endif
 
 	// Free descriptor
-	free_desc(desc);
+	the_app->free_desc(desc);
 	return 0;
 }
 
@@ -434,7 +438,7 @@ int16 PrimeTime(uint32 tm, int32 time)
 	D(bug("PrimeTime %08lx, time %ld\n", tm, time));
 
 	// Find descriptor
-	TMDesc *desc = find_desc(tm);
+	TMDesc *desc = the_app->find_desc(tm);
 	if (!desc) {
 		printf("FATAL: PrimeTime(%08lx): Descriptor not found\n", tm);
 		return 0;
@@ -500,7 +504,7 @@ int16 PrimeTime(uint32 tm, int32 time)
 #if PRECISE_TIMING
 	// Look for next task to be called and set wakeup_time
 	wakeup_time = wakeup_time_max;
-	for (TMDesc *d = tmDescList; d; d = d->next)
+	for (TMDesc *d = the_app->tmDescList; d; d = d->next)
 		if ((ReadMacInt16(d->task + qType) & 0x8000))
 			if (timer_cmp_time(d->wakeup, wakeup_time) < 0)
 				wakeup_time = d->wakeup;
@@ -612,7 +616,7 @@ void TimerInterrupt(void)
 	// Look for active TMTasks that have expired
 	tm_time_t now;
 	timer_current_time(now);
-	TMDesc *desc = tmDescList;
+	TMDesc *desc = the_app->tmDescList;
 	while (desc) {
 		TMDesc *next = desc->next;
 		uint32 tm = desc->task;
@@ -651,7 +655,7 @@ void TimerInterrupt(void)
 	pthread_mutex_lock(&wakeup_time_lock);
 #endif
 	wakeup_time = wakeup_time_max;
-	for (TMDesc *d = tmDescList; d; d = d->next)
+	for (TMDesc *d = the_app->tmDescList; d; d = d->next)
 		if ((ReadMacInt16(d->task + qType) & 0x8000))
 			if (timer_cmp_time(d->wakeup, wakeup_time) < 0)
 				wakeup_time = d->wakeup;
