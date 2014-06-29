@@ -279,13 +279,16 @@ public:
 	virtual ~monitor_desc() {}
 
 	// Get current Mac frame buffer base address
-	uint32 get_mac_frame_base(void) const {return screen_base;}
+	uint32 get_mac_frame_base(void) const {return the_app->video_state.screen_base;}
 
 	// Set Mac frame buffer base address (called from switch_to_mode())
-	void set_mac_frame_base(uint32 base) {screen_base = base;}
+	void set_mac_frame_base(uint32 base) {the_app->video_state.screen_base = base;}
 
 	// Get current video mode
-	const VIDEO_MODE &get_current_mode(void) const {return VModes[cur_mode];}
+	const VIDEO_MODE &get_current_mode(void) const {
+		video_state_t *s = &the_app->video_state;
+		return s->VModes[s->cur_mode];
+	}
 
 	// Called by the video driver to switch the video mode on this display
 	// (must call set_mac_frame_base())
@@ -659,7 +662,8 @@ void driver_base::set_video_mode(int flags)
 
 void driver_base::init()
 {
-	set_video_mode(display_type == DISPLAY_SCREEN ? SDL_FULLSCREEN : 0);
+	video_state_t *st = &the_app->video_state;
+	set_video_mode(st->display_type == DISPLAY_SCREEN ? SDL_FULLSCREEN : 0);
 	int aligned_height = (VIDEO_MODE_Y + 15) & ~15;
 
 #ifdef ENABLE_VOSF
@@ -701,6 +705,7 @@ void driver_base::init()
 }
 
 void driver_base::adapt_to_video_mode() {
+	video_state_t *st = &the_app->video_state;
 	ADBSetRelMouseMode(false);
 
 	// Init blitting routines
@@ -723,13 +728,13 @@ void driver_base::adapt_to_video_mode() {
 	hardware_cursor = video_can_change_cursor();
 	if (hardware_cursor) {
 		// Create cursor
-		if ((sdl_cursor = SDL_CreateCursor(MacCursor + 4, MacCursor + 36, 16, 16, 0, 0)) != NULL) {
+		if ((sdl_cursor = SDL_CreateCursor(st->MacCursor + 4, st->MacCursor + 36, 16, 16, 0, 0)) != NULL) {
 			SDL_SetCursor(sdl_cursor);
 		}
 	}
 	// Tell the video driver there's a change in cursor type
-	if (private_data)
-		private_data->cursorHardware = hardware_cursor;
+	if (st->private_data)
+		st->private_data->cursorHardware = hardware_cursor;
 #endif
 	// Hide cursor
 	SDL_ShowCursor(hardware_cursor);
@@ -967,6 +972,7 @@ bool SDL_monitor_desc::video_open(void)
 #ifdef SHEEPSHAVER
 bool VideoInit(void)
 {
+	video_state_t *s = &the_app->video_state;
 	const bool classic = false;
 #else
 bool VideoInit(bool classic)
@@ -1014,12 +1020,12 @@ bool VideoInit(bool classic)
 		default_width = 640;
 		default_height = 480;
 	}
-	display_type = DISPLAY_WINDOW;
+	s->display_type = DISPLAY_WINDOW;
 	if (mode_str) {
 		if (sscanf(mode_str, "win/%d/%d", &default_width, &default_height) == 2)
-			display_type = DISPLAY_WINDOW;
+			s->display_type = DISPLAY_WINDOW;
 		else if (sscanf(mode_str, "dga/%d/%d", &default_width, &default_height) == 2)
-			display_type = DISPLAY_SCREEN;
+			s->display_type = DISPLAY_SCREEN;
 	}
 	if (default_width <= 0)
 		default_width = sdl_display_width();
@@ -1069,9 +1075,9 @@ bool VideoInit(bool classic)
 	video_modes[0].h = default_height;
 
 	// Construct list of supported modes
-	if (display_type == DISPLAY_WINDOW) {
+	if (s->display_type == DISPLAY_WINDOW) {
 		if (classic)
-			add_mode(display_type, 512, 342, 0x80, 64, VIDEO_DEPTH_1BIT);
+			add_mode(s->display_type, 512, 342, 0x80, 64, VIDEO_DEPTH_1BIT);
 		else {
 			for (int i = 0; video_modes[i].w != 0; i++) {
 				const int w = video_modes[i].w;
@@ -1079,10 +1085,10 @@ bool VideoInit(bool classic)
 				if (i > 0 && (w >= default_width || h >= default_height))
 					continue;
 				for (int d = VIDEO_DEPTH_1BIT; d <= default_depth; d++)
-					add_mode(display_type, w, h, video_modes[i].resolution_id, TrivialBytesPerRow(w, (video_depth)d), d);
+					add_mode(s->display_type, w, h, video_modes[i].resolution_id, TrivialBytesPerRow(w, (video_depth)d), d);
 			}
 		}
-	} else if (display_type == DISPLAY_SCREEN) {
+	} else if (s->display_type == DISPLAY_SCREEN) {
 		for (int i = 0; video_modes[i].w != 0; i++) {
 			const int w = video_modes[i].w;
 			const int h = video_modes[i].h;
@@ -1091,7 +1097,7 @@ bool VideoInit(bool classic)
 			if (w == 512 && h == 384)
 				continue;
 			for (int d = VIDEO_DEPTH_1BIT; d <= default_depth; d++)
-				add_mode(display_type, w, h, video_modes[i].resolution_id, TrivialBytesPerRow(w, (video_depth)d), d);
+				add_mode(s->display_type, w, h, video_modes[i].resolution_id, TrivialBytesPerRow(w, (video_depth)d), d);
 		}
 	}
 
@@ -1109,7 +1115,7 @@ bool VideoInit(bool classic)
 			default_id = VIDEO_MODE_RESOLUTION;
 #ifdef SHEEPSHAVER
 			std::vector<VIDEO_MODE>::const_iterator begin = VideoModes.begin();
-			cur_mode = distance(begin, i);
+			s->cur_mode = distance(begin, i);
 #endif
 			break;
 		}
@@ -1119,14 +1125,14 @@ bool VideoInit(bool classic)
 		default_depth = VIDEO_MODE_DEPTH;
 		default_id = VIDEO_MODE_RESOLUTION;
 #ifdef SHEEPSHAVER
-		cur_mode = 0;
+		s->cur_mode = 0;
 #endif
 	}
 
 #ifdef SHEEPSHAVER
 	for (int i = 0; i < VideoModes.size(); i++)
-		VModes[i] = VideoModes[i];
-	VideoInfo *p = &VModes[VideoModes.size()];
+		s->VModes[i] = VideoModes[i];
+	VideoInfo *p = &s->VModes[VideoModes.size()];
 	p->viType = DIS_INVALID;        // End marker
 	p->viRowBytes = 0;
 	p->viXsize = p->viYsize = 0;
@@ -1218,6 +1224,7 @@ void VideoQuitFullScreen(void)
 
 static void do_toggle_fullscreen(void)
 {
+	video_state_t *s = &the_app->video_state;
 #ifndef USE_CPU_EMUL_SERVICES
 	// pause redraw thread
 	thread_stop_ack = false;
@@ -1234,9 +1241,9 @@ static void do_toggle_fullscreen(void)
 		drv->s->flags);
 
 	// switch modes
-	display_type = (display_type == DISPLAY_SCREEN) ? DISPLAY_WINDOW
+	s->display_type = (s->display_type == DISPLAY_SCREEN) ? DISPLAY_WINDOW
 		: DISPLAY_SCREEN;
-	drv->set_video_mode(display_type == DISPLAY_SCREEN ? SDL_FULLSCREEN : 0);
+	drv->set_video_mode(s->display_type == DISPLAY_SCREEN ? SDL_FULLSCREEN : 0);
 	drv->adapt_to_video_mode();
 
 	// reset the palette
@@ -1277,6 +1284,8 @@ static void do_toggle_fullscreen(void)
 #ifdef SHEEPSHAVER
 void VideoVBL(void)
 {
+	video_state_t *s = &the_app->video_state;
+
 	// Emergency quit requested? Then quit
 	if (emerg_quit)
 		QuitEmulator();
@@ -1290,8 +1299,8 @@ void VideoVBL(void)
 	LOCK_FRAME_BUFFER;
 
 	// Execute video VBL
-	if (private_data != NULL && private_data->interruptsEnabled)
-		VSLDoInterruptService(private_data->vslServiceID);
+	if (s->private_data != NULL && s->private_data->interruptsEnabled)
+		VSLDoInterruptService(s->private_data->vslServiceID);
 }
 #else
 void VideoInterrupt(void)
@@ -1324,10 +1333,11 @@ void video_set_palette(void)
 	monitor_desc * monitor = VideoMonitors[0];
 	int n_colors = palette_size(monitor->get_current_mode().viAppleMode);
 	uint8 pal[256 * 3];
+	video_state_t *s = &the_app->video_state;
 	for (int c = 0; c < n_colors; c++) {
-		pal[c*3 + 0] = mac_pal[c].red;
-		pal[c*3 + 1] = mac_pal[c].green;
-		pal[c*3 + 2] = mac_pal[c].blue;
+		pal[c*3 + 0] = s->mac_pal[c].red;
+		pal[c*3 + 1] = s->mac_pal[c].green;
+		pal[c*3 + 2] = s->mac_pal[c].blue;
 	}
 	monitor->set_palette(pal, n_colors);
 }
@@ -1387,14 +1397,16 @@ void SDL_monitor_desc::set_palette(uint8 *pal, int num_in)
 #ifdef SHEEPSHAVER
 int16 video_mode_change(VidLocals *csSave, uint32 ParamPtr)
 {
+	video_state_t *s = &the_app->video_state;
+
 	/* return if no mode change */
 	if ((csSave->saveData == ReadMacInt32(ParamPtr + csData)) &&
 	    (csSave->saveMode == ReadMacInt16(ParamPtr + csMode))) return noErr;
 
 	/* first find video mode in table */
-	for (int i=0; VModes[i].viType != DIS_INVALID; i++) {
-		if ((ReadMacInt16(ParamPtr + csMode) == VModes[i].viAppleMode) &&
-		    (ReadMacInt32(ParamPtr + csData) == VModes[i].viAppleID)) {
+	for (int i=0; s->VModes[i].viType != DIS_INVALID; i++) {
+		if ((ReadMacInt16(ParamPtr + csMode) == s->VModes[i].viAppleMode) &&
+		    (ReadMacInt32(ParamPtr + csData) == s->VModes[i].viAppleID)) {
 			csSave->saveMode = ReadMacInt16(ParamPtr + csMode);
 			csSave->saveData = ReadMacInt32(ParamPtr + csData);
 			csSave->savePage = ReadMacInt16(ParamPtr + csPage);
@@ -1405,14 +1417,14 @@ int16 video_mode_change(VidLocals *csSave, uint32 ParamPtr)
 			thread_stop_req = true;
 			while (!thread_stop_ack) ;
 
-			cur_mode = i;
+			s->cur_mode = i;
 			monitor_desc *monitor = VideoMonitors[0];
 			monitor->switch_to_current_mode();
 
-			WriteMacInt32(ParamPtr + csBaseAddr, screen_base);
-			csSave->saveBaseAddr=screen_base;
-			csSave->saveData=VModes[cur_mode].viAppleID;/* First mode ... */
-			csSave->saveMode=VModes[cur_mode].viAppleMode;
+			WriteMacInt32(ParamPtr + csBaseAddr, s->screen_base);
+			csSave->saveBaseAddr=s->screen_base;
+			csSave->saveData=s->VModes[s->cur_mode].viAppleID;/* First mode ... */
+			csSave->saveMode=s->VModes[s->cur_mode].viAppleMode;
 
 			// Enable interrupts and resume redraw thread
 			thread_stop_req = false;
@@ -1439,6 +1451,11 @@ void SDL_monitor_desc::switch_to_current_mode(void)
 }
 
 
+void sheepshaver_state::reopen_video(void)
+{
+	VideoMonitors[0]->switch_to_current_mode();
+}
+
 /*
  *  Can we set the MacOS cursor image into the window?
  */
@@ -1446,7 +1463,7 @@ void SDL_monitor_desc::switch_to_current_mode(void)
 #ifdef SHEEPSHAVER
 bool video_can_change_cursor(void)
 {
-	if (display_type != DISPLAY_WINDOW)
+	if (the_app->video_state.display_type != DISPLAY_WINDOW)
 		return false;
 
 #if defined(__APPLE__)
@@ -1479,12 +1496,14 @@ bool video_can_change_cursor(void)
 #ifdef SHEEPSHAVER
 void video_set_cursor(void)
 {
+	video_state_t *s = &the_app->video_state;
+
 	// Set new cursor image if it was changed
 	if (sdl_cursor) {
 		SDL_FreeCursor(sdl_cursor);
-		sdl_cursor = SDL_CreateCursor(MacCursor + 4, MacCursor + 36, 16, 16, MacCursor[2], MacCursor[3]);
+		sdl_cursor = SDL_CreateCursor(s->MacCursor + 4, s->MacCursor + 36, 16, 16, s->MacCursor[2], s->MacCursor[3]);
 		if (sdl_cursor) {
-			SDL_ShowCursor(private_data == NULL || private_data->cursorVisible);
+			SDL_ShowCursor(s->private_data == NULL || s->private_data->cursorVisible);
 			SDL_SetCursor(sdl_cursor);
 
 			// XXX Windows apparently needs an extra mouse event to
@@ -1813,7 +1832,7 @@ static void handle_events(void)
 
 			// Hidden parts exposed, force complete refresh of window
 			case SDL_VIDEOEXPOSE:
-				if (display_type == DISPLAY_WINDOW) {
+				if (the_app->video_state.display_type == DISPLAY_WINDOW) {
 					const VIDEO_MODE &mode = VideoMonitors[0]->get_current_mode();
 #ifdef ENABLE_VOSF
 					if (use_vosf) {			// VOSF refresh
@@ -2168,7 +2187,7 @@ static void video_refresh_window_static(void)
 static void VideoRefreshInit(void)
 {
 	// TODO: set up specialised 8bpp VideoRefresh handlers ?
-	if (display_type == DISPLAY_SCREEN) {
+	if (the_app->video_state.display_type == DISPLAY_SCREEN) {
 #if ENABLE_VOSF && (REAL_ADDRESSING || DIRECT_ADDRESSING)
 		if (use_vosf)
 			video_refresh = video_refresh_dga_vosf;

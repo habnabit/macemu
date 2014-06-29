@@ -74,6 +74,7 @@ void sheepshaver_state::do_save_load(void)
 		load_descs(fd);
 		Host2Mac_memcpy(0, buf, RAMSize);
 		ppc_cpu->invalidate_cache();
+		reopen_video();
 	}
 	close(fd);
 	free(buf);

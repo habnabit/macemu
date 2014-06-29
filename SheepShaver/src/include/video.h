@@ -131,8 +131,6 @@ struct VidLocals{
 	uint32	regEntryID;			// Mac address of the service owner
 };
 
-extern VidLocals *private_data;	// Pointer to driver local variables (there is only one display, so this is ok)
-
 extern bool VideoInit(void);
 extern void VideoExit(void);
 extern void VideoVBL(void);
@@ -157,6 +155,23 @@ extern void NQD_bitblt(uint32);
 extern void NQD_invrect(uint32);
 extern void NQD_fillrect(uint32);
 
-extern bool keyfile_valid;
+class video_state_t
+{
+public:
+	bool keyfile_valid;
+	VidLocals *private_data;	// Pointer to driver local variables
+	bool video_activated;		// Flag: video display activated, mouse and keyboard data valid
+	uint32 screen_base;				// Frame buffer base address
+	int cur_mode;						// Number of current video mode (index in VModes array)
+	int display_type;		// Current display type
+	rgb_color mac_pal[256];
+	uint8 remap_mac_be[256];
+	uint8 MacCursor[68];	// Mac cursor image
+	struct VideoInfo VModes[64];
+	long save_conf_id;
+	long save_conf_mode;
+
+	video_state_t();
+};
 
 #endif

@@ -2,6 +2,7 @@
 #include "cpu_emulation.h"
 #include "sigsegv.h"
 #include "timer.h"
+#include "video.h"
 #include "cpu/ppc/ppc-cpu.hpp"
 
 
@@ -83,6 +84,9 @@ public:
 	void dump_descs(void);
 	void save_descs(int);
 	void load_descs(int);
+
+	video_state_t video_state;
+	void reopen_video(void);
 };
 
 extern sheepshaver_state *the_app;
