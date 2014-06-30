@@ -733,8 +733,7 @@ void driver_base::adapt_to_video_mode() {
 		}
 	}
 	// Tell the video driver there's a change in cursor type
-	if (st->private_data)
-		st->private_data->cursorHardware = hardware_cursor;
+	st->private_data.cursorHardware = hardware_cursor;
 #endif
 	// Hide cursor
 	SDL_ShowCursor(hardware_cursor);
@@ -1299,8 +1298,8 @@ void VideoVBL(void)
 	LOCK_FRAME_BUFFER;
 
 	// Execute video VBL
-	if (s->private_data != NULL && s->private_data->interruptsEnabled)
-		VSLDoInterruptService(s->private_data->vslServiceID);
+	if (s->private_data.interruptsEnabled)
+		VSLDoInterruptService(s->private_data.vslServiceID);
 }
 #else
 void VideoInterrupt(void)
@@ -1503,7 +1502,7 @@ void video_set_cursor(void)
 		SDL_FreeCursor(sdl_cursor);
 		sdl_cursor = SDL_CreateCursor(s->MacCursor + 4, s->MacCursor + 36, 16, 16, s->MacCursor[2], s->MacCursor[3]);
 		if (sdl_cursor) {
-			SDL_ShowCursor(s->private_data == NULL || s->private_data->cursorVisible);
+			SDL_ShowCursor(s->private_data.cursorVisible);
 			SDL_SetCursor(sdl_cursor);
 
 			// XXX Windows apparently needs an extra mouse event to

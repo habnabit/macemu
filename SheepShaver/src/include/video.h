@@ -35,8 +35,6 @@ struct VideoInfo {
 	uint32 viAppleID;		// Screen DisplayID
 };
 
-extern struct VideoInfo VModes[];	// List of available video modes
-
 enum {	// viAppleMode
 	APPLE_1_BIT = 0x80,
 	APPLE_2_BIT,
@@ -101,14 +99,6 @@ enum {	// Display type
 	DIS_WINDOW
 };
 
-extern bool video_activated;		// Flag: video display activated, mouse and keyboard data valid
-extern uint32 screen_base;			// Frame buffer base address
-extern int cur_mode;					// Number of current video mode (index in VModes array)
-extern int display_type;			// Current display type (see above)
-extern rgb_color mac_pal[256];
-extern uint8 remap_mac_be[256];
-extern uint8 MacCursor[68];
-
 struct VidLocals{
 	uint16	saveMode;
 	uint32	saveData;
@@ -159,7 +149,7 @@ class video_state_t
 {
 public:
 	bool keyfile_valid;
-	VidLocals *private_data;	// Pointer to driver local variables
+	VidLocals private_data;	// Driver local variables
 	bool video_activated;		// Flag: video display activated, mouse and keyboard data valid
 	uint32 screen_base;				// Frame buffer base address
 	int cur_mode;						// Number of current video mode (index in VModes array)

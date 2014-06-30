@@ -110,7 +110,7 @@ bool VideoSnapshot(int xsize, int ysize, uint8 *p)
 {
 	video_state_t *s = &the_app->video_state;
 	if (s->display_type == DIS_WINDOW) {
-		uint8 *screen = (uint8 *)s->private_data->saveBaseAddr;
+		uint8 *screen = (uint8 *)s->private_data.saveBaseAddr;
 		uint32 row_bytes = s->VModes[s->cur_mode].viRowBytes;
 		uint32 y2size = s->VModes[s->cur_mode].viYsize;
 		uint32 x2size = s->VModes[s->cur_mode].viXsize;
@@ -983,13 +983,10 @@ int16 VideoDoDriverIO(uint32 spaceID, uint32 commandID, uint32 commandContents, 
 	switch (commandCode) {
 		case kInitializeCommand:
 		case kReplaceCommand:
-			if (s->private_data != NULL) {	// Might be left over from a reboot
-				if (s->private_data->gammaTable)
-					Mac_sysfree(s->private_data->gammaTable);
-				if (s->private_data->regEntryID)
-					Mac_sysfree(s->private_data->regEntryID);
-			}
-			delete s->private_data;
+			if (s->private_data.gammaTable)
+				Mac_sysfree(s->private_data.gammaTable);
+			if (s->private_data.regEntryID)
+				Mac_sysfree(s->private_data.regEntryID);
 
 			iocic_tvect = FindLibSymbol("\021DriverServicesLib", "\023IOCommandIsComplete");
 			D(bug("IOCommandIsComplete TVECT at %08lx\n", iocic_tvect));
@@ -1027,44 +1024,39 @@ int16 VideoDoDriverIO(uint32 spaceID, uint32 commandID, uint32 commandContents, 
 				break;
 			}
 
-			s->private_data = new VidLocals;
-			s->private_data->gammaTable = 0;
-			s->private_data->regEntryID = Mac_sysalloc(sizeof(RegEntryID));
-			if (s->private_data->regEntryID == 0) {
+			s->private_data.gammaTable = 0;
+			s->private_data.regEntryID = Mac_sysalloc(sizeof(RegEntryID));
+			if (s->private_data.regEntryID == 0) {
 				printf("FATAL: VideoDoDriverIO(): Can't allocate service owner\n");
 				err = -1;
 				break;
 			}
-			Mac2Mac_memcpy(s->private_data->regEntryID, commandContents + 2, 16);	// DriverInitInfo.deviceEntry
-			s->private_data->interruptsEnabled = false;	// Disable interrupts
+			Mac2Mac_memcpy(s->private_data.regEntryID, commandContents + 2, 16);	// DriverInitInfo.deviceEntry
+			s->private_data.interruptsEnabled = false;	// Disable interrupts
 			break;
 
 		case kFinalizeCommand:
 		case kSupersededCommand:
-			if (s->private_data != NULL) {
-				if (s->private_data->gammaTable)
-					Mac_sysfree(s->private_data->gammaTable);
-				if (s->private_data->regEntryID)
-					Mac_sysfree(s->private_data->regEntryID);
-			}
-			delete s->private_data;
-			s->private_data = NULL;
+			if (s->private_data.gammaTable)
+				Mac_sysfree(s->private_data.gammaTable);
+			if (s->private_data.regEntryID)
+				Mac_sysfree(s->private_data.regEntryID);
 			break;
 
 		case kOpenCommand:
-			err = VideoOpen(commandContents, s->private_data);
+			err = VideoOpen(commandContents, &s->private_data);
 			break;
 
 		case kCloseCommand:
-			err = VideoClose(commandContents, s->private_data);
+			err = VideoClose(commandContents, &s->private_data);
 			break;
 
 		case kControlCommand:
-			err = VideoControl(commandContents, s->private_data);
+			err = VideoControl(commandContents, &s->private_data);
 			break;
 
 		case kStatusCommand:
-			err = VideoStatus(commandContents, s->private_data);
+			err = VideoStatus(commandContents, &s->private_data);
 			break;
 
 		case kReadCommand:

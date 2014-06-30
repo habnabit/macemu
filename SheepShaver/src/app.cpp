@@ -63,6 +63,7 @@ void sheepshaver_state::do_save_load(void)
 		Mac2Host_memcpy(buf, 0, RAMSize);
 		write_exactly(buf, fd, RAMSize);
 		write_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		write_exactly(&video_state, fd, sizeof video_state);
 		save_descs(fd);
 	} else if (save_op == OP_LOAD_STATE) {
 		if ((fd = open(filename, O_RDONLY)) < 0) {
@@ -71,10 +72,12 @@ void sheepshaver_state::do_save_load(void)
 		}
 		read_exactly(buf, fd, RAMSize);
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		read_exactly(&video_state, fd, sizeof video_state);
 		load_descs(fd);
 		Host2Mac_memcpy(0, buf, RAMSize);
 		ppc_cpu->invalidate_cache();
 		reopen_video();
+		video_set_palette();
 	}
 	close(fd);
 	free(buf);
