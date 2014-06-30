@@ -4,6 +4,9 @@
 #include <strings.h>
 #include "app.hpp"
 
+#define DEBUG 1
+#include "debug.h"
+
 
 sheepshaver_state::sheepshaver_state()
 {
@@ -119,11 +122,28 @@ void sheepshaver_state::do_save_load(void)
 void sheepshaver_state::start_recording(void)
 {
 	if (record_recording) return;
-	record_recording = new recording_t(time_state.base_time);
+	D(bug("started recording\n"));
+	record_recording = new recording_t(&time_state);
 }
 
 void sheepshaver_state::load_recording(char *filename)
 {
-	if (play_recording) return;
+	if (play_recording) {
+		if (!play_recording->done) return;
+		D(bug("deleting old recording\n"));
+		delete play_recording;
+	}
+	D(bug("playing recording: %s\n", filename));
 	play_recording = new recording_t(filename);
+	D(bug("time_state before %lu %u\n", time_state.microseconds, time_state.base_time));
+	memcpy(&time_state, &play_recording->header.time_state, sizeof time_state);
+	D(bug("time_state after  %lu %u\n", time_state.microseconds, time_state.base_time));
+}
+
+void sheepshaver_state::advance_microseconds(uint64 delta)
+{
+	time_state.microseconds += delta;
+	if (play_recording) {
+		play_recording->play_through(time_state.microseconds);
+	}
 }

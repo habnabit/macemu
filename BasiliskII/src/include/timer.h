@@ -53,4 +53,10 @@ struct TMDesc {
 	TMDesc *next;
 };
 
+struct time_state_t
+{
+	uint64 microseconds;
+	uint32 base_time;
+};
+
 #endif

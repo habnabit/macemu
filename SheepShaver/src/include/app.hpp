@@ -73,14 +73,6 @@ public:
 };
 
 
-class time_state_t
-{
-public:
-	uint64 microseconds;
-	uint32 base_time;
-};
-
-
 enum save_op_t {
 	OP_NO_STATE,
 	OP_SAVE_STATE,
@@ -127,6 +119,7 @@ public:
 	recording_t *play_recording;
 	void start_recording(void);
 	void load_recording(char *);
+	void advance_microseconds(uint64);
 
 	inline void record(recording_op_t op, uint64 arg)
 	{

@@ -1724,10 +1724,10 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 	case SDLK_F8: SAVESTATE(7)
 	case SDLK_F9:
 		if (!key_down) {
-			if (is_shift_down(ks) && the_app->record_recording) {
-				the_app->record_recording->save();
-			} else {
+			if (is_shift_down(ks)) {
 				the_app->start_recording();
+			} else if (the_app->record_recording) {
+				the_app->record_recording->save();
 			}
 		}
 		return -2;

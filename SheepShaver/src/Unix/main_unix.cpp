@@ -1367,7 +1367,7 @@ static void *tick_func(void *arg)
 		else if (delay < -16625)
 			next = GetTicks_usec();
 		ticks++;
-		the_app->time_state.microseconds += 16625;
+		the_app->advance_microseconds(16625);
 
 #if !EMULATED_PPC
 		// Did we crash?

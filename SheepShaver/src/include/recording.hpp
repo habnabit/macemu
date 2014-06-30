@@ -1,6 +1,8 @@
 #ifndef RECORDING_HPP
 #define RECORDING_HPP
 
+#include "timer.h"
+
 #define RECORDING_BLOCK_FRAMES 8192
 
 
@@ -12,7 +14,7 @@ enum recording_op_t {
 
 struct recording_header_t
 {
-	uint32 base_time;
+	time_state_t time_state;
 	uint32 frame_blocks;
 };
 
@@ -33,6 +35,8 @@ public:
 	void dump(void);
 };
 
+class time_state_t;
+
 class recording_t
 {
 public:
@@ -40,12 +44,16 @@ public:
 	recording_frame_block_t *current_block;
 	recording_frame_block_t *first_block;
 	uint8 current_frame;
+	uint8 countdown;
+	bool done;
 
-	recording_t(uint32);
+	recording_t(time_state_t *);
 	recording_t(char *);
+	~recording_t();
 	void record(recording_op_t op, uint64 microseconds, uint64 arg);
 	void dump(void);
 	void save(void);
+	void play_through(uint64 end);
 
 private:
 	recording_frame_block_t *_blocks;
