@@ -114,7 +114,7 @@
 #include "sigregs.h"
 #include "rpc.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
 
 
@@ -1367,6 +1367,7 @@ static void *tick_func(void *arg)
 		else if (delay < -16625)
 			next = GetTicks_usec();
 		ticks++;
+		the_app->time_state.microseconds += 16625;
 
 #if !EMULATED_PPC
 		// Did we crash?
@@ -1413,7 +1414,7 @@ static void *tick_func(void *arg)
 #endif
 
 		// Pseudo Mac 1Hz interrupt, update local time
-		if (++tick_counter > 60) {
+		if (++tick_counter >= 60) {
 			tick_counter = 0;
 			WriteMacInt32(0x20c, TimerDateTime());
 		}

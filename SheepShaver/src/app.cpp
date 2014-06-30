@@ -10,6 +10,8 @@ sheepshaver_state::sheepshaver_state()
 	video_buffer = NULL;
 	video_buffer_size = 0;
 	initialize_tvect();
+	time_state.microseconds = 0;
+	time_state.base_time = TimeToMacTime(time(NULL));
 }
 
 void sheepshaver_state::initialize_tvect(void)
@@ -76,6 +78,7 @@ void sheepshaver_state::do_save_load(void)
 		Mac2Host_memcpy(buf, 0, RAMSize);
 		write_exactly(buf, fd, RAMSize);
 		write_exactly(&macos_tvect, fd, sizeof macos_tvect);
+		write_exactly(&time_state, fd, sizeof time_state);
 		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			write_exactly(video_buffer, fd, video_buffer_size);
@@ -90,6 +93,7 @@ void sheepshaver_state::do_save_load(void)
 		}
 		read_exactly(buf, fd, RAMSize);
 		read_exactly(&macos_tvect, fd, sizeof macos_tvect);
+		read_exactly(&time_state, fd, sizeof time_state);
 		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			if (video_buffer) {

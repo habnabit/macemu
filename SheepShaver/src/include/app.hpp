@@ -3,6 +3,7 @@
 #include "sigsegv.h"
 #include "timer.h"
 #include "video.h"
+#include "macos_util.h"
 #include "cpu/ppc/ppc-cpu.hpp"
 
 
@@ -68,6 +69,14 @@ public:
 };
 
 
+class time_state_t
+{
+public:
+	uint64 microseconds;
+	uint32 base_time;
+};
+
+
 enum save_op_t {
 	OP_NO_STATE,
 	OP_SAVE_STATE,
@@ -107,6 +116,8 @@ public:
 
 	macos_tvect_t macos_tvect;
 	void initialize_tvect(void);
+
+	time_state_t time_state;
 };
 
 extern sheepshaver_state *the_app;

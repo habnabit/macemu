@@ -27,6 +27,8 @@
 #define DEBUG 0
 #include "debug.h"
 
+#include "app.hpp"
+
 // For NetBSD with broken pthreads headers
 #ifndef CLOCK_REALTIME
 #define CLOCK_REALTIME 0
@@ -44,7 +46,7 @@ static inline void mach_current_time(tm_time_t &t) {
 		host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &host_clock);
 		host_clock_inited = true;
 	}
-	
+
 	clock_get_time(host_clock, &t);
 }
 #endif
@@ -56,20 +58,7 @@ static inline void mach_current_time(tm_time_t &t) {
 
 void Microseconds(uint32 &hi, uint32 &lo)
 {
-	D(bug("Microseconds\n"));
-#if defined(HAVE_CLOCK_GETTIME)
-	struct timespec t;
-	clock_gettime(CLOCK_REALTIME, &t);
-	uint64 tl = (uint64)t.tv_sec * 1000000 + t.tv_nsec / 1000;
-#elif defined(__MACH__)
-	tm_time_t t;
-	mach_current_time(t);
-	uint64 tl = (uint64)t.tv_sec * 1000000 + t.tv_nsec / 1000;
-#else
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	uint64 tl = (uint64)t.tv_sec * 1000000 + t.tv_usec;
-#endif
+	uint64 tl = the_app->time_state.microseconds;
 	hi = tl >> 32;
 	lo = tl;
 }
@@ -81,7 +70,7 @@ void Microseconds(uint32 &hi, uint32 &lo)
 
 uint32 TimerDateTime(void)
 {
-	return TimeToMacTime(time(NULL));
+	return the_app->time_state.base_time + (the_app->time_state.microseconds / 1000000);
 }
 
 
