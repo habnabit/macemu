@@ -9,6 +9,12 @@ sheepshaver_state::sheepshaver_state()
 {
 	video_buffer = NULL;
 	video_buffer_size = 0;
+	initialize_tvect();
+}
+
+void sheepshaver_state::initialize_tvect(void)
+{
+	bzero(&macos_tvect, sizeof macos_tvect);
 }
 
 void read_exactly(void *dest, int fd, size_t length)

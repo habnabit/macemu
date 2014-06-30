@@ -55,6 +55,19 @@ public:
 	friend class sheepshaver_state;
 };
 
+
+class macos_tvect_t
+{
+public:
+	uint32 d_tvect;
+	uint32 nps_tvect;
+	uint32 cc_tvect;
+	uint32 fs_tvect;
+	uint32 gsl_tvect;
+	uint32 cu_tvect;
+};
+
+
 enum save_op_t {
 	OP_NO_STATE,
 	OP_SAVE_STATE,
@@ -91,6 +104,9 @@ public:
 	uint8 *video_buffer;
 	uint32 video_buffer_size;
 	void reopen_video(void);
+
+	macos_tvect_t macos_tvect;
+	void initialize_tvect(void);
 };
 
 extern sheepshaver_state *the_app;

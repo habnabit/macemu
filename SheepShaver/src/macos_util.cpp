@@ -29,46 +29,42 @@
 #include "macos_util.h"
 #include "thunks.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
+
+#include "app.hpp"
 
 
 // Function pointers
 typedef long (*cu_ptr)(void *, uint32);
-static uint32 cu_tvect = 0;
 static inline long CallUniversal(void *arg1, uint32 arg2)
 {
-	return (long)CallMacOS2(cu_ptr, cu_tvect, arg1, arg2);
+	return (long)CallMacOS2(cu_ptr, the_app->macos_tvect.cu_tvect, arg1, arg2);
 }
 typedef int16 (*gsl_ptr)(char *, uint32, uint32, uint32 *, void **, char *);
-static uint32 gsl_tvect = 0;
 static inline int16 GetSharedLibrary(uintptr arg1, uint32 arg2, uint32 arg3, uintptr arg4, uintptr arg5, uintptr arg6)
 {
-	return (int16)CallMacOS6(gsl_ptr, gsl_tvect, (char *)arg1, arg2, arg3, (uint32 *)arg4, (void **)arg5, (char *)arg6);
+	return (int16)CallMacOS6(gsl_ptr, the_app->macos_tvect.gsl_tvect, (char *)arg1, arg2, arg3, (uint32 *)arg4, (void **)arg5, (char *)arg6);
 }
 typedef int16 (*fs_ptr)(uint32, char *, void **, uint32 *);
-static uint32 fs_tvect = 0;
 static inline int16 FindSymbol(uint32 arg1, uintptr arg2, uintptr arg3, uintptr arg4)
 {
-	return (int16)CallMacOS4(fs_ptr, fs_tvect, arg1, (char *)arg2, (void **)arg3, (uint32 **)arg4);
+	return (int16)CallMacOS4(fs_ptr, the_app->macos_tvect.fs_tvect, arg1, (char *)arg2, (void **)arg3, (uint32 **)arg4);
 }
 typedef int16 (*cc_ptr)(uint32 *);
-static uint32 cc_tvect = 0;
 static inline int16 CloseConnection(uint32 *arg1)
 {
-	return (int16)CallMacOS1(cc_ptr, cc_tvect, arg1);
+	return (int16)CallMacOS1(cc_ptr, the_app->macos_tvect.cc_tvect, arg1);
 }
 typedef uint32 (*nps_ptr)(uint32);
-static uint32 nps_tvect = 0;
 static inline uint32 NewPtrSys(uint32 arg1)
 {
-	return CallMacOS1(nps_ptr, nps_tvect, arg1);
+	return CallMacOS1(nps_ptr, the_app->macos_tvect.nps_tvect, arg1);
 }
 typedef void (*d_ptr)(uint32);
-static uint32 d_tvect = 0;
 static inline void DisposePtr(uint32 arg1)
 {
-	CallMacOS1(d_ptr, d_tvect, arg1);
+	CallMacOS1(d_ptr, the_app->macos_tvect.d_tvect, arg1);
 }
 
 
@@ -78,10 +74,7 @@ static inline void DisposePtr(uint32 arg1)
 
 void MacOSUtilReset(void)
 {
-	cu_tvect = 0;
-	gsl_tvect = 0;
-	fs_tvect = 0;
-	cc_tvect = 0;
+	the_app->initialize_tvect();
 }
 
 
@@ -179,7 +172,7 @@ uint32 FindLibSymbol(const char *lib_str, const char *sym_str)
 
 	if (ReadMacInt32(XLM_RUN_MODE) == MODE_EMUL_OP) {
 		M68kRegisters r;
-	
+
 		// Find shared library
 		static const uint8 proc1_template[] = {
 			0x55, 0x8f,							// subq.l	#2,a7
@@ -203,7 +196,7 @@ uint32 FindLibSymbol(const char *lib_str, const char *sym_str)
 		D(bug(" GetSharedLibrary: ret %d, connection ID %ld, main %p\n", (int16)r.d[0], conn_id.value(), main_addr.value()));
 		if (r.d[0])
 			return 0;
-	
+
 		// Find symbol
 		static const uint8 proc2_template[] = {
 			0x55, 0x8f,					// subq.l	#2,a7
@@ -257,44 +250,45 @@ uint32 FindLibSymbol(const char *lib_str, const char *sym_str)
 
 void InitCallUniversalProc()
 {
-	cu_tvect = FindLibSymbol("\014InterfaceLib", "\021CallUniversalProc");
-	D(bug("CallUniversalProc TVECT at %08lx\n", cu_tvect));
-	if (cu_tvect == 0) {
+	macos_tvect_t *v = &the_app->macos_tvect;
+	v->cu_tvect = FindLibSymbol("\014InterfaceLib", "\021CallUniversalProc");
+	D(bug("CallUniversalProc TVECT at %08lx\n", v->cu_tvect));
+	if (v->cu_tvect == 0) {
 		printf("FATAL: Can't find CallUniversalProc()\n");
 		QuitEmulator();
 	}
 
-	gsl_tvect = FindLibSymbol("\014InterfaceLib", "\020GetSharedLibrary");
-	D(bug("GetSharedLibrary TVECT at %08lx\n", gsl_tvect));
-	if (gsl_tvect == 0) {
+	v->gsl_tvect = FindLibSymbol("\014InterfaceLib", "\020GetSharedLibrary");
+	D(bug("GetSharedLibrary TVECT at %08lx\n", v->gsl_tvect));
+	if (v->gsl_tvect == 0) {
 		printf("FATAL: Can't find GetSharedLibrary()\n");
 		QuitEmulator();
 	}
 
-	fs_tvect = FindLibSymbol("\014InterfaceLib", "\012FindSymbol");
-	D(bug("FindSymbol TVECT at %08lx\n", fs_tvect));
-	if (fs_tvect == 0) {
+	v->fs_tvect = FindLibSymbol("\014InterfaceLib", "\012FindSymbol");
+	D(bug("FindSymbol TVECT at %08lx\n", v->fs_tvect));
+	if (v->fs_tvect == 0) {
 		printf("FATAL: Can't find FindSymbol()\n");
 		QuitEmulator();
 	}
 
-	cc_tvect = FindLibSymbol("\014InterfaceLib", "\017CloseConnection");
-	D(bug("CloseConnection TVECT at %08lx\n", cc_tvect));
-	if (cc_tvect == 0) {
+	v->cc_tvect = FindLibSymbol("\014InterfaceLib", "\017CloseConnection");
+	D(bug("CloseConnection TVECT at %08lx\n", v->cc_tvect));
+	if (v->cc_tvect == 0) {
 		printf("FATAL: Can't find CloseConnection()\n");
 		QuitEmulator();
 	}
 
-	nps_tvect = FindLibSymbol("\014InterfaceLib", "\011NewPtrSys");
-	D(bug("NewPtrSys TVECT at %08lx\n", nps_tvect));
-	if (nps_tvect == 0) {
+	v->nps_tvect = FindLibSymbol("\014InterfaceLib", "\011NewPtrSys");
+	D(bug("NewPtrSys TVECT at %08lx\n", v->nps_tvect));
+	if (v->nps_tvect == 0) {
 		printf("FATAL: Can't find NewPtrSys()\n");
 		QuitEmulator();
 	}
 
-	d_tvect = FindLibSymbol("\014InterfaceLib", "\012DisposePtr");
-	D(bug("DisposePtr TVECT at %08lx\n", d_tvect));
-	if (d_tvect == 0) {
+	v->d_tvect = FindLibSymbol("\014InterfaceLib", "\012DisposePtr");
+	D(bug("DisposePtr TVECT at %08lx\n", v->d_tvect));
+	if (v->d_tvect == 0) {
 		printf("FATAL: Can't find DisposePtr()\n");
 		QuitEmulator();
 	}
@@ -307,7 +301,7 @@ void InitCallUniversalProc()
 
 long CallUniversalProc(void *upp, uint32 info)
 {
-	if (cu_tvect == 0) {
+	if (the_app->macos_tvect.cu_tvect == 0) {
 		printf("FATAL: CallUniversalProc() called too early\n");
 		return 0;
 	}
