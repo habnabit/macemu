@@ -1722,9 +1722,29 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 	case SDLK_F6: SAVESTATE(5)
 	case SDLK_F7: SAVESTATE(6)
 	case SDLK_F8: SAVESTATE(7)
-	case SDLK_F9: return 0x65;
-	case SDLK_F10: return 0x6d;
-	case SDLK_F11: return 0x67;
+	case SDLK_F9:
+		if (!key_down) {
+			if (is_shift_down(ks) && the_app->record_recording) {
+				the_app->record_recording->save();
+			} else {
+				the_app->start_recording();
+			}
+		}
+		return -2;
+	case SDLK_F10:
+		if (!key_down) {
+			the_app->load_recording("recording");
+		}
+		return -2;
+	case SDLK_F11:
+		if (!key_down) {
+			if (is_shift_down && the_app->record_recording) {
+				the_app->record_recording->dump();
+			} else if (the_app->play_recording) {
+				the_app->play_recording->dump();
+			}
+		}
+		return -2;
 	case SDLK_F12: return 0x6f;
 
 	case SDLK_PRINT: return 0x69;

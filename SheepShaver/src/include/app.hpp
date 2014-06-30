@@ -1,9 +1,13 @@
+#ifndef APP_HPP
+#define APP_HPP
+
 #include "sysdeps.h"
 #include "cpu_emulation.h"
 #include "sigsegv.h"
 #include "timer.h"
 #include "video.h"
 #include "macos_util.h"
+#include "recording.hpp"
 #include "cpu/ppc/ppc-cpu.hpp"
 
 
@@ -118,8 +122,20 @@ public:
 	void initialize_tvect(void);
 
 	time_state_t time_state;
+
+	recording_t *record_recording;
+	recording_t *play_recording;
+	void start_recording(void);
+	void load_recording(char *);
+
+	inline void record(recording_op_t op, uint64 arg)
+	{
+		if (record_recording) record_recording->record(op, time_state.microseconds, arg);
+	}
 };
 
 extern sheepshaver_state *the_app;
 void read_exactly(void *, int, size_t);
 void write_exactly(void *, int, size_t);
+
+#endif

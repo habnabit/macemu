@@ -12,6 +12,7 @@ sheepshaver_state::sheepshaver_state()
 	initialize_tvect();
 	time_state.microseconds = 0;
 	time_state.base_time = TimeToMacTime(time(NULL));
+	record_recording = play_recording = NULL;
 }
 
 void sheepshaver_state::initialize_tvect(void)
@@ -112,4 +113,17 @@ void sheepshaver_state::do_save_load(void)
 	}
 	close(fd);
 	free(buf);
+}
+
+
+void sheepshaver_state::start_recording(void)
+{
+	if (record_recording) return;
+	record_recording = new recording_t(time_state.base_time);
+}
+
+void sheepshaver_state::load_recording(char *filename)
+{
+	if (play_recording) return;
+	play_recording = new recording_t(filename);
 }

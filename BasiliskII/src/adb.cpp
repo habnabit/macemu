@@ -41,6 +41,8 @@
 #define DEBUG 0
 #include "debug.h"
 
+#include "app.hpp"
+
 
 // Global variables
 static int mouse_x = 0, mouse_y = 0;							// Mouse position
@@ -245,7 +247,7 @@ void ADBMouseMoved(int x, int y)
 }
 
 
-/* 
+/*
  *  Mouse button pressed
  */
 
@@ -291,6 +293,7 @@ void ADBKeyDown(int code)
 	// Add keycode to buffer
 	key_buffer[key_write_ptr] = code;
 	key_write_ptr = (key_write_ptr + 1) % KEY_BUFFER_SIZE;
+	the_app->record(OP_KEY_DOWN, code);
 
 	// Set key in matrix
 	key_states[code >> 3] |= (1 << (~code & 7));
@@ -310,6 +313,7 @@ void ADBKeyUp(int code)
 	// Add keycode to buffer
 	key_buffer[key_write_ptr] = code | 0x80;	// Key-up flag
 	key_write_ptr = (key_write_ptr + 1) % KEY_BUFFER_SIZE;
+	the_app->record(OP_KEY_UP, code);
 
 	// Clear key in matrix
 	key_states[code >> 3] &= ~(1 << (~code & 7));
@@ -363,7 +367,7 @@ void ADBInterrupt(void)
 				WriteMacInt8(tmp_data, 2);
 				WriteMacInt8(tmp_data + 1, (my & 0x7f) | (mb[0] ? 0 : 0x80));
 				WriteMacInt8(tmp_data + 2, (mx & 0x7f) | (mb[1] ? 0 : 0x80));
-			}	
+			}
 			r.a[0] = tmp_data;
 			r.a[1] = ReadMacInt32(mouse_base);
 			r.a[2] = ReadMacInt32(mouse_base + 4);
