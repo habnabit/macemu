@@ -16,6 +16,8 @@ sheepshaver_state::sheepshaver_state()
 	time_state.microseconds = 0;
 	time_state.base_time = TimeToMacTime(time(NULL));
 	record_recording = play_recording = NULL;
+	pthread_barrier_init(&tick_barrier, NULL, 2);
+	tick_stepping = false;
 }
 
 void sheepshaver_state::initialize_tvect(void)

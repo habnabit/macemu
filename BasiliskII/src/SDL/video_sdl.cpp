@@ -1745,7 +1745,20 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 			}
 		}
 		return -2;
-	case SDLK_F12: return 0x6f;
+	case SDLK_F12:
+		if (!key_down) {
+			if (is_shift_down(ks)) {
+				if (the_app->tick_stepping) {
+					pthread_barrier_wait(&the_app->tick_barrier);
+					the_app->tick_stepping = false;
+				} else {
+					the_app->tick_stepping = true;
+				}
+			} else if (the_app->tick_stepping) {
+				pthread_barrier_wait(&the_app->tick_barrier);
+			}
+		}
+		return -2;
 
 	case SDLK_PRINT: return 0x69;
 	case SDLK_SCROLLOCK: return 0x6b;
@@ -2313,6 +2326,8 @@ static int redraw_func(void *arg)
 			thread_stop_ack = true;
 			continue;
 		}
+
+		if (the_app->tick_stepping) TriggerInterrupt();
 
 		// Process pending events and update display
 		do_video_refresh();
