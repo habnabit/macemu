@@ -5,6 +5,12 @@
 #include "app.hpp"
 
 
+sheepshaver_state::sheepshaver_state()
+{
+	video_buffer = NULL;
+	video_buffer_size = 0;
+}
+
 void read_exactly(void *dest, int fd, size_t length)
 {
 	ssize_t just_read;
@@ -60,8 +66,13 @@ void sheepshaver_state::do_save_load(void)
 			perror("do_save_load: open");
 			return;
 		}
+		VideoSaveBuffer();
 		Mac2Host_memcpy(buf, 0, RAMSize);
 		write_exactly(buf, fd, RAMSize);
+		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
+		if (video_buffer_size) {
+			write_exactly(video_buffer, fd, video_buffer_size);
+		}
 		write_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
 		write_exactly(&video_state, fd, sizeof video_state);
 		save_descs(fd);
@@ -71,6 +82,14 @@ void sheepshaver_state::do_save_load(void)
 			return;
 		}
 		read_exactly(buf, fd, RAMSize);
+		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
+		if (video_buffer_size) {
+			if (video_buffer) {
+				free(video_buffer);
+			}
+			video_buffer = (uint8 *)malloc(video_buffer_size);
+			read_exactly(video_buffer, fd, video_buffer_size);
+		}
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
 		read_exactly(&video_state, fd, sizeof video_state);
 		load_descs(fd);

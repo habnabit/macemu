@@ -607,6 +607,7 @@ public:
 	~driver_base();
 
 	void init(); // One-time init
+	void init_with_app(sheepshaver_state *);
 	void set_video_mode(int flags);
 	void adapt_to_video_mode();
 
@@ -622,12 +623,15 @@ public:
 	void grab_mouse(void);
 	void ungrab_mouse(void);
 
+	void save_buffer(void);
+
 public:
 	SDL_monitor_desc &monitor; // Associated video monitor
 	const VIDEO_MODE &mode;    // Video mode handled by the driver
 
 	bool init_ok;	// Initialization succeeded (we can't use exceptions because of -fomit-frame-pointer)
 	SDL_Surface *s;	// The surface we draw into
+	sheepshaver_state *app;
 };
 
 #ifdef ENABLE_VOSF
@@ -642,7 +646,7 @@ static driver_base *drv = NULL;	// Pointer to currently used driver object
 #endif
 
 driver_base::driver_base(SDL_monitor_desc &m)
-	: monitor(m), mode(m.get_current_mode()), init_ok(false), s(NULL)
+	: monitor(m), mode(m.get_current_mode()), init_ok(false), s(NULL), app(NULL)
 {
 	the_buffer = NULL;
 	the_buffer_copy = NULL;
@@ -658,6 +662,12 @@ void driver_base::set_video_mode(int flags)
 #ifdef ENABLE_VOSF
 	the_host_buffer = (uint8 *)s->pixels;
 #endif
+}
+
+void driver_base::init_with_app(sheepshaver_state *tapp)
+{
+	app = tapp;
+	init();
 }
 
 void driver_base::init()
@@ -696,6 +706,10 @@ void driver_base::init()
 		the_buffer_copy = (uint8 *)calloc(1, the_buffer_size);
 		the_buffer = (uint8 *)vm_acquire_framebuffer(the_buffer_size);
 		D(bug("the_buffer = %p, the_buffer_copy = %p\n", the_buffer, the_buffer_copy));
+		if (app->video_buffer && app->video_buffer_size == the_buffer_size) {
+			memcpy(the_buffer, app->video_buffer, the_buffer_size);
+			D(bug("restored video buffer\n"));
+		}
 	}
 
 	// Set frame buffer base
@@ -743,6 +757,25 @@ void driver_base::adapt_to_video_mode() {
 
 	// Everything went well
 	init_ok = true;
+}
+
+void driver_base::save_buffer()
+{
+	if (app->video_buffer) {
+		free(app->video_buffer);
+	}
+	app->video_buffer = (uint8 *)malloc(the_buffer_size);
+	if (app->video_buffer) {
+		memcpy(app->video_buffer, the_buffer, the_buffer_size);
+		app->video_buffer_size = the_buffer_size;
+		D(bug("saved video buffer\n"));
+	}
+}
+
+void VideoSaveBuffer(void)
+{
+	if (drv)
+		drv->save_buffer();
 }
 
 driver_base::~driver_base()
@@ -934,7 +967,7 @@ bool SDL_monitor_desc::video_open(void)
 	drv = new(std::nothrow) driver_base(*this);
 	if (drv == NULL)
 		return false;
-	drv->init();
+	drv->init_with_app(the_app);
 	if (!drv->init_ok) {
 		delete drv;
 		drv = NULL;

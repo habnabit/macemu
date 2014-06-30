@@ -64,6 +64,8 @@ enum save_op_t {
 class sheepshaver_state
 {
 public:
+	sheepshaver_state();
+
 	sheepshaver_cpu *ppc_cpu;
 
 	void init_emul_ppc(void);
@@ -86,6 +88,8 @@ public:
 	void load_descs(int);
 
 	video_state_t video_state;
+	uint8 *video_buffer;
+	uint32 video_buffer_size;
 	void reopen_video(void);
 };
 

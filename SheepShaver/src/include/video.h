@@ -126,6 +126,7 @@ extern void VideoExit(void);
 extern void VideoVBL(void);
 extern void VideoInstallAccel(void);
 extern void VideoQuitFullScreen(void);
+extern void VideoSaveBuffer(void);
 
 extern void video_set_palette(void);
 extern void video_set_cursor(void);
