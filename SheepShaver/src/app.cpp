@@ -75,6 +75,7 @@ void sheepshaver_state::do_save_load(void)
 		VideoSaveBuffer();
 		Mac2Host_memcpy(buf, 0, RAMSize);
 		write_exactly(buf, fd, RAMSize);
+		write_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			write_exactly(video_buffer, fd, video_buffer_size);
@@ -88,6 +89,7 @@ void sheepshaver_state::do_save_load(void)
 			return;
 		}
 		read_exactly(buf, fd, RAMSize);
+		read_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			if (video_buffer) {
