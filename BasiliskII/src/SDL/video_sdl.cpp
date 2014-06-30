@@ -1749,8 +1749,8 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 		if (!key_down) {
 			if (is_shift_down(ks)) {
 				if (the_app->tick_stepping) {
-					pthread_barrier_wait(&the_app->tick_barrier);
 					the_app->tick_stepping = false;
+					pthread_barrier_wait(&the_app->tick_barrier);
 				} else {
 					the_app->tick_stepping = true;
 				}
