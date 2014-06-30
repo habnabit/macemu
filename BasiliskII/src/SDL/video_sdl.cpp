@@ -761,14 +761,19 @@ void driver_base::adapt_to_video_mode() {
 
 void driver_base::save_buffer()
 {
-	if (app->video_buffer) {
-		free(app->video_buffer);
-	}
-	app->video_buffer = (uint8 *)malloc(the_buffer_size);
-	if (app->video_buffer) {
-		memcpy(app->video_buffer, the_buffer, the_buffer_size);
-		app->video_buffer_size = the_buffer_size;
-		D(bug("saved video buffer\n"));
+	if (app) {
+		D(bug("video_buffer: %p video_buffer_size: %u\n", app->video_buffer, app->video_buffer_size));
+		if (app->video_buffer) {
+			free(app->video_buffer);
+		}
+		app->video_buffer = (uint8 *)malloc(the_buffer_size);
+		if (app->video_buffer) {
+			memcpy(app->video_buffer, the_buffer, the_buffer_size);
+			app->video_buffer_size = the_buffer_size;
+			D(bug("saved video buffer\n"));
+		}
+	} else {
+		D(bug("no app\n"));
 	}
 }
 
