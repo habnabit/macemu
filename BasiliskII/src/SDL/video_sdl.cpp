@@ -1738,7 +1738,7 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 		return -2;
 	case SDLK_F11:
 		if (!key_down) {
-			if (is_shift_down && the_app->record_recording) {
+			if (is_shift_down(ks) && the_app->record_recording) {
 				the_app->record_recording->dump();
 			} else if (the_app->play_recording) {
 				the_app->play_recording->dump();
