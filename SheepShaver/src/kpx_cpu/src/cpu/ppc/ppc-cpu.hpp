@@ -117,6 +117,12 @@ public:
 	powerpc_vr & vr(int i)		{ return regs().vr[i]; }
 	powerpc_vr const & vr(int i) const { return regs().vr[i]; }
 
+	clock_t execute_start_time;
+	uint64 cycles;
+	uint64 period_cycles;
+	uint64 next;
+
+
 protected:
 
 	// Condition codes management

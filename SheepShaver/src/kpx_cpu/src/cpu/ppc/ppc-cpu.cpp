@@ -37,10 +37,13 @@
 #include "mon_disass.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
 
 #include "app.hpp"
+
+#define CYCLES_PER_60HZ 5000
+
 
 #if PPC_PROFILE_GENERIC_CALLS
 uint32 powerpc_cpu::generic_calls_count[PPC_I(MAX)];
@@ -265,6 +268,9 @@ void powerpc_cpu::initialize()
 	init_registers();
 	init_decode_cache();
 	execute_depth = 0;
+	execute_start_time = clock();
+	cycles = period_cycles = 0;
+	next = GetTicks_usec();
 
 	// Initialize block lookup table
 #if PPC_DECODE_CACHE || PPC_ENABLE_JIT
@@ -586,6 +592,22 @@ void powerpc_cpu::execute(uint32 entry)
 				// Execute all cached blocks
 				for (;;) {
 					codegen.execute(bi->entry_point);
+
+					++cycles; ++period_cycles;
+					if (period_cycles == CYCLES_PER_60HZ) {
+						next += 16625;
+						int64 delay = next - GetTicks_usec();
+						if (delay < 0) D(bug("processor delay: %ld\n", delay));
+						if (delay > 0) Delay_usec(delay);
+						else if (delay < -16625) next = GetTicks_usec();
+						if (cycles % 100000 == 0) {
+							uint64 delta = (clock() - execute_start_time) / CLOCKS_PER_SEC;
+							if (delta) {
+								D(bug("%10lu cycles; %10lu cycles per sec\n", cycles, cycles / delta));
+							}
+						}
+						period_cycles = 0;
+					}
 
 					if (!spcflags().empty()) {
 						if (!check_spcflags())
