@@ -507,11 +507,11 @@ void powerpc_registers::interrupt_copy(powerpc_registers &oregs, powerpc_registe
 	}
 }
 
-bool powerpc_cpu::check_spcflags()
+spcflags_check_result_t powerpc_cpu::check_spcflags()
 {
 	if (spcflags().test(SPCFLAG_CPU_EXEC_RETURN)) {
 		spcflags().clear(SPCFLAG_CPU_EXEC_RETURN);
-		return false;
+		return RESULT_RETURN;
 	}
 #ifdef SHEEPSHAVER
 	if (spcflags().test(SPCFLAG_CPU_HANDLE_INTERRUPT)) {
@@ -533,6 +533,7 @@ bool powerpc_cpu::check_spcflags()
 	if (spcflags().test(SPCFLAG_HANDLE_SAVESTATE)) {
 		spcflags().clear(SPCFLAG_HANDLE_SAVESTATE);
 		the_app->do_save_load();
+		return RESULT_RECOMPILE;
 	}
 #endif
 	if (spcflags().test(SPCFLAG_CPU_ENTER_MON)) {
@@ -550,7 +551,7 @@ bool powerpc_cpu::check_spcflags()
 		mon(sizeof(arg)/sizeof(arg[0]) - 1, arg);
 #endif
 	}
-	return true;
+	return RESULT_NOTHING;
 }
 
 #if DYNGEN_DIRECT_BLOCK_CHAINING
@@ -610,8 +611,13 @@ void powerpc_cpu::execute(uint32 entry)
 					}
 
 					if (!spcflags().empty()) {
-						if (!check_spcflags())
+						switch (check_spcflags()) {
+						case RESULT_RETURN:
 							goto return_site;
+						case RESULT_RECOMPILE:
+							D(bug("returned from check_spcflags; recompiling next\n"));
+							goto compile_next;
+						}
 
 						// Force redecoding if cache was invalidated
 						if (spcflags().test(SPCFLAG_JIT_EXEC_RETURN)) {
@@ -628,6 +634,7 @@ void powerpc_cpu::execute(uint32 entry)
 						break;
 				}
 
+			compile_next:
 				// Compile new block
 				bi = compile_block(pc());
 			}
@@ -717,7 +724,7 @@ void powerpc_cpu::execute(uint32 entry)
 				}
 
 				if (!spcflags().empty()) {
-					if (!check_spcflags())
+					if (check_spcflags() == RESULT_RETURN)
 						goto return_site;
 
 					// Force redecoding if cache was invalidated
@@ -749,13 +756,13 @@ void powerpc_cpu::execute(uint32 entry)
 		if (is_logging())
 			record_step(opcode);
 #endif
-		assert(ii->execute.ptr() != 0);
+//assert(ii->execute.ptr() != 0);
 		ii->execute(this, opcode);
 #if PPC_EXECUTE_DUMP_STATE
 		if (dump_state)
 			dump_registers();
 #endif
-		if (!spcflags().empty() && !check_spcflags())
+		if (!spcflags().empty() && check_spcflags() == RESULT_RETURN)
 			goto return_site;
 	}
   return_site:

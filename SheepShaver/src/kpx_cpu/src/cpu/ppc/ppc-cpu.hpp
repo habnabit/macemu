@@ -35,6 +35,13 @@
 #include "cpu/ppc/ppc-instructions.hpp"
 #include <vector>
 
+
+enum spcflags_check_result_t {
+	RESULT_NOTHING = 0,
+	RESULT_RETURN,
+	RESULT_RECOMPILE
+};
+
 class powerpc_cpu
 #ifndef SHEEPSHAVER
 	: public basic_cpu
@@ -251,7 +258,7 @@ private:
 	uint32 field2mask[256];
 
 	// Check special CPU flags
-	bool check_spcflags();
+	spcflags_check_result_t check_spcflags();
 
 	// Current execute() nested level
 	int execute_depth;
