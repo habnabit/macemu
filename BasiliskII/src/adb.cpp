@@ -38,7 +38,7 @@
 #include "thunks.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
 
 #include "app.hpp"
@@ -242,6 +242,7 @@ void ADBMouseMoved(int x, int y)
 		mouse_x = x; mouse_y = y;
 	}
 	B2_unlock_mutex(mouse_lock);
+	the_app->record(OP_MOUSE_XY, (uint64)mouse_x | ((uint64)mouse_y << 32));
 	SetInterruptFlag(INTFLAG_ADB);
 	TriggerInterrupt();
 }
@@ -254,6 +255,7 @@ void ADBMouseMoved(int x, int y)
 void ADBMouseDown(int button)
 {
 	mouse_button[button] = true;
+	the_app->record(OP_MOUSE_DOWN, button);
 	SetInterruptFlag(INTFLAG_ADB);
 	TriggerInterrupt();
 }
@@ -266,6 +268,7 @@ void ADBMouseDown(int button)
 void ADBMouseUp(int button)
 {
 	mouse_button[button] = false;
+	the_app->record(OP_MOUSE_UP, button);
 	SetInterruptFlag(INTFLAG_ADB);
 	TriggerInterrupt();
 }
@@ -461,4 +464,6 @@ void ADBInterrupt(void)
 	// Clear temporary data
 	WriteMacInt32(tmp_data, 0);
 	WriteMacInt32(tmp_data + 4, 0);
+
+	D(bug("ADBInterrupt done\n"));
 }

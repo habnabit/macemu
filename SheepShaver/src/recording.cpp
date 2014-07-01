@@ -71,7 +71,7 @@ recording_t::~recording_t()
 void recording_t::record(recording_op_t op, uint64 microseconds, uint64 arg)
 {
 	recording_frame_t *frame = &current_block->frames[current_frame++];
-	D(bug("recording %d %lu\n", op, arg));
+	D(bug("recording: %04x %d %lx %lu\n", current_frame, op, arg, microseconds));
 	frame->op = op;
 	frame->microseconds = microseconds;
 	frame->arg = arg;
@@ -134,14 +134,24 @@ void recording_t::play_through(uint64 end)
 				break;
 			}
 			current_block = current_block->next;
+			current_frame = 0;
 		}
-		D(bug("playback: %d %lu %lu\n", f->op, f->arg, f->microseconds));
+		D(bug("playback: %04x %d %lx %lu\n", current_frame, f->op, f->arg, f->microseconds));
 		switch (f->op) {
 		case OP_KEY_DOWN:
 			ADBKeyDown(f->arg);
 			break;
 		case OP_KEY_UP:
 			ADBKeyUp(f->arg);
+			break;
+		case OP_MOUSE_DOWN:
+			ADBMouseDown(f->arg);
+			break;
+		case OP_MOUSE_UP:
+			ADBMouseUp(f->arg);
+			break;
+		case OP_MOUSE_XY:
+			ADBMouseMoved(f->arg & 0xffffffff, f->arg >> 32);
 			break;
 		}
 	} while (1);

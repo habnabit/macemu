@@ -9,7 +9,10 @@
 enum recording_op_t {
 	OP_NO_OP = 0,
 	OP_KEY_DOWN,
-	OP_KEY_UP
+	OP_KEY_UP,
+	OP_MOUSE_DOWN,
+	OP_MOUSE_UP,
+	OP_MOUSE_XY
 };
 
 struct recording_header_t
@@ -43,7 +46,7 @@ public:
 	recording_header_t header;
 	recording_frame_block_t *current_block;
 	recording_frame_block_t *first_block;
-	uint8 current_frame;
+	uint16 current_frame;
 	uint8 countdown;
 	bool done;
 
