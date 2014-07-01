@@ -71,7 +71,6 @@ void sheepshaver_state::load_state(int slot)
 
 void sheepshaver_state::do_save_load(void)
 {
-	void *buf = malloc(RAMSize);
 	char filename[32];
 	int fd;
 	snprintf(filename, sizeof filename, "%d.save", save_slot);
@@ -81,8 +80,14 @@ void sheepshaver_state::do_save_load(void)
 			return;
 		}
 		VideoSaveBuffer();
-		Mac2Host_memcpy(buf, 0, RAMSize);
-		write_exactly(buf, fd, RAMSize);
+		if (RAMBase) {
+			write_exactly(Mac2HostAddr(0), fd, 0x3000);
+		}
+		write_exactly(RAMBaseHost, fd, RAMSize);
+		write_exactly(Mac2HostAddr(KERNEL_DATA_BASE), fd, KERNEL_AREA_SIZE);
+		write_exactly(Mac2HostAddr(KERNEL_DATA2_BASE), fd, KERNEL_AREA_SIZE);
+		write_exactly(Mac2HostAddr(DR_EMULATOR_BASE), fd, DR_EMULATOR_SIZE);
+		write_exactly(Mac2HostAddr(DR_CACHE_BASE), fd, DR_CACHE_SIZE);
 		write_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		write_exactly(&time_state, fd, sizeof time_state);
 		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
@@ -97,7 +102,14 @@ void sheepshaver_state::do_save_load(void)
 			perror("do_save_load: open");
 			return;
 		}
-		read_exactly(buf, fd, RAMSize);
+		if (RAMBase) {
+			read_exactly(Mac2HostAddr(0), fd, 0x3000);
+		}
+		read_exactly(RAMBaseHost, fd, RAMSize);
+		read_exactly(Mac2HostAddr(KERNEL_DATA_BASE), fd, KERNEL_AREA_SIZE);
+		read_exactly(Mac2HostAddr(KERNEL_DATA2_BASE), fd, KERNEL_AREA_SIZE);
+		read_exactly(Mac2HostAddr(DR_EMULATOR_BASE), fd, DR_EMULATOR_SIZE);
+		read_exactly(Mac2HostAddr(DR_CACHE_BASE), fd, DR_CACHE_SIZE);
 		read_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		read_exactly(&time_state, fd, sizeof time_state);
 		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
@@ -110,14 +122,13 @@ void sheepshaver_state::do_save_load(void)
 		}
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
 		read_exactly(&video_state, fd, sizeof video_state);
-		load_descs(fd);
-		Host2Mac_memcpy(0, buf, RAMSize);
+		clear_descs();
+		//load_descs(fd);
 		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
 	}
 	close(fd);
-	free(buf);
 }
 
 
