@@ -122,8 +122,7 @@ void sheepshaver_state::do_save_load(void)
 		}
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
 		read_exactly(&video_state, fd, sizeof video_state);
-		clear_descs();
-		//load_descs(fd);
+		load_descs(fd);
 		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
