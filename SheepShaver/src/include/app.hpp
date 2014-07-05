@@ -120,7 +120,7 @@ public:
 	recording_t *record_recording;
 	recording_t *play_recording;
 	void start_recording(void);
-	void load_recording(char *);
+	void load_recording(const char *);
 	void advance_microseconds(uint64);
 
 	inline void record(recording_op_t op, uint64 arg)

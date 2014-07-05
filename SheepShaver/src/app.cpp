@@ -139,7 +139,7 @@ void sheepshaver_state::start_recording(void)
 	record_recording = new recording_t(&time_state);
 }
 
-void sheepshaver_state::load_recording(char *filename)
+void sheepshaver_state::load_recording(const char *filename)
 {
 	if (play_recording) {
 		if (!play_recording->done) return;

@@ -51,7 +51,7 @@ public:
 	bool done;
 
 	recording_t(time_state_t *);
-	recording_t(char *);
+	recording_t(const char *);
 	~recording_t();
 	void record(recording_op_t op, uint64 microseconds, uint64 arg);
 	void dump(void);

@@ -35,7 +35,7 @@ recording_t::recording_t(time_state_t *time_state)
 	done = false;
 }
 
-recording_t::recording_t(char *filename)
+recording_t::recording_t(const char *filename)
 {
 	int fd = open(filename, O_RDONLY);
 	recording_frame_block_t *prev = NULL;
@@ -117,7 +117,7 @@ void recording_t::play_through(uint64 end)
 		recording_frame_t *f = &current_block->frames[current_frame];
 		if (f->microseconds > end) {
 			if (!countdown) {
-				D(bug("%d us until next\n", f->microseconds - end));
+				D(bug("%lu us until next\n", f->microseconds - end));
 				countdown = 60;
 			} else --countdown;
 			break;
@@ -138,6 +138,8 @@ void recording_t::play_through(uint64 end)
 		}
 		D(bug("playback: %04x %d %lx %lu\n", current_frame, f->op, f->arg, f->microseconds));
 		switch (f->op) {
+		case OP_NO_OP:
+			break;
 		case OP_KEY_DOWN:
 			ADBKeyDown(f->arg);
 			break;
@@ -153,6 +155,8 @@ void recording_t::play_through(uint64 end)
 		case OP_MOUSE_XY:
 			ADBMouseMoved(f->arg & 0xffffffff, f->arg >> 32);
 			break;
+		default:
+			D(bug("invalid op: %d", f->op));
 		}
 	} while (1);
 }
