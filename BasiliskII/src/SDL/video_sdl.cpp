@@ -198,19 +198,9 @@ extern void SysMountFirstFloppy(void);
 
 static void *vm_acquire_framebuffer(uint32 size)
 {
-	// always try to reallocate framebuffer at the same address
-	static void *fb = VM_MAP_FAILED;
-	if (fb != VM_MAP_FAILED) {
-		if (vm_acquire_fixed(fb, size) < 0) {
-#ifndef SHEEPSHAVER
-			printf("FATAL: Could not reallocate framebuffer at previous address\n");
-#endif
-			fb = VM_MAP_FAILED;
-		}
-	}
-	if (fb == VM_MAP_FAILED)
-		fb = vm_acquire(size, VM_MAP_DEFAULT | VM_MAP_32BIT);
-	return fb;
+	void *framebuffer_loc = Mac2HostAddr(0x42000000);
+	if (vm_acquire_fixed(framebuffer_loc, size) < 0) return VM_MAP_FAILED;
+	return framebuffer_loc;
 }
 
 static inline void vm_release_framebuffer(void *fb, uint32 size)

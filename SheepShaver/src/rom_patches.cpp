@@ -156,7 +156,7 @@ bool DecodeROM(uint8 *data, uint32 size)
 		// CHRP compressed ROM image
 		uint32 image_offset, image_size;
 		bool decode_info_ok = false;
-		
+
 		char *s = strstr((char *)data, "constant lzss-offset");
 		if (s != NULL) {
 			// Probably a plain LZSS compressed ROM image
@@ -177,11 +177,11 @@ bool DecodeROM(uint8 *data, uint32 size)
 				}
 			}
 		}
-		
+
 		// No valid information to decode the ROM found?
 		if (!decode_info_ok)
 			return false;
-		
+
 		// Check signature, this could be a parcels-based ROM image
 		uint32 rom_signature = ntohl(*(uint32 *)(data + image_offset));
 		if (rom_signature == FOURCC('p','r','c','l')) {
@@ -1029,7 +1029,7 @@ static bool patch_nanokernel_boot(void)
 	if ((base = find_rom_data(0x310000, 0x320000, pm_check_dat, sizeof(pm_check_dat))) == 0) return false;
 	D(bug("pm_check %08lx\n", base));
 	lp = (uint32 *)(ROMBaseHost + base);
-	
+
 	static const int spr_check_list[] = {
 		952 /* mmcr0 */, 953 /* pmc1 */, 954 /* pmc2 */, 955 /* sia */,
 		956 /* mmcr1 */, 957 /* pmc3 */, 958 /* pmc4 */, 959 /* sda */

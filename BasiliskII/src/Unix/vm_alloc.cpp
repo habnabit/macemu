@@ -43,6 +43,10 @@
 #include <sys/utsname.h>
 #endif
 
+#define DEBUG 1
+#include "debug.h"
+
+
 #ifdef HAVE_MACH_VM
 #ifndef HAVE_MACH_TASK_SELF
 #ifdef HAVE_TASK_SELF
@@ -229,7 +233,7 @@ void vm_exit(void)
 void * vm_acquire(size_t size, int options)
 {
 	void * addr;
-	
+
 	errno = 0;
 
 	// VM_MAP_FIXED are to be used with vm_acquire_fixed() only
@@ -252,9 +256,9 @@ void * vm_acquire(size_t size, int options)
 	int fd = zero_fd;
 	int the_map_flags = translate_map_flags(options) | map_flags;
 
-	if ((addr = mmap((caddr_t)next_address, size, VM_PAGE_DEFAULT, the_map_flags, fd, 0)) == (void *)MAP_FAILED)
+	if ((addr = mmap(NULL, size, VM_PAGE_DEFAULT, the_map_flags, fd, 0)) == (void *)MAP_FAILED)
 		return VM_MAP_FAILED;
-	
+
 	// Sanity checks for 64-bit platforms
 	if (sizeof(void *) == 8 && (options & VM_MAP_32BIT) && !((char *)addr <= (char *)0xffffffff))
 		return VM_MAP_FAILED;
@@ -270,7 +274,7 @@ void * vm_acquire(size_t size, int options)
 #else
 	if ((addr = calloc(size, 1)) == 0)
 		return VM_MAP_FAILED;
-	
+
 	// Omit changes for protections because they are not supported in this mode
 	return addr;
 #endif
@@ -279,7 +283,7 @@ void * vm_acquire(size_t size, int options)
 	// say MacOS X, mmap() doesn't honour the requested protection flags.
 	if (vm_protect(addr, size, VM_PAGE_DEFAULT) != 0)
 		return VM_MAP_FAILED;
-	
+
 	return addr;
 }
 
@@ -289,7 +293,7 @@ void * vm_acquire(size_t size, int options)
 int vm_acquire_fixed(void * addr, size_t size, int options)
 {
 	errno = 0;
-	
+
 	// Fixed mappings are required to be private
 	if (options & VM_MAP_SHARED)
 		return -1;
@@ -365,7 +369,7 @@ int vm_release(void * addr, size_t size)
 #endif
 #endif
 #endif
-	
+
 	return 0;
 }
 
@@ -462,7 +466,7 @@ int main(void)
 	vm_init();
 
 	vm_uintptr_t page_size = vm_get_page_size();
-	
+
 	char *area;
 	const int n_pages = 7;
 	const int area_size = n_pages * page_size;
@@ -522,10 +526,10 @@ int main(void)
 #ifdef SIGBUS
 	signal(SIGBUS,  fault_handler);
 #endif
-	
+
 #define page_align(address) ((char *)((vm_uintptr_t)(address) & -page_size))
 	vm_uintptr_t page_size = vm_get_page_size();
-	
+
 	const int area_size = 6 * page_size;
 	volatile char * area = (volatile char *) vm_acquire(area_size);
 	volatile char * fault_address = area + (page_size * 7) / 2;
@@ -536,14 +540,14 @@ int main(void)
 
 	if (vm_release((char *)area, area_size) < 0)
 		return 1;
-	
+
 	return 0;
 #endif
 
 #if defined(TEST_VM_PROT_NONE_READ) || defined(TEST_VM_PROT_NONE_WRITE)
 	if (area == VM_MAP_FAILED)
 		return 0;
-	
+
 	if (vm_protect(page_align(fault_address), page_size, VM_PAGE_NOACCESS) < 0)
 		return 0;
 #endif
@@ -551,10 +555,10 @@ int main(void)
 #if defined(TEST_VM_PROT_RDWR_WRITE)
 	if (area == VM_MAP_FAILED)
 		return 1;
-	
+
 	if (vm_protect(page_align(fault_address), page_size, VM_PAGE_READ) < 0)
 		return 1;
-	
+
 	if (vm_protect(page_align(fault_address), page_size, VM_PAGE_READ | VM_PAGE_WRITE) < 0)
 		return 1;
 #endif

@@ -10,21 +10,14 @@
 
 sheepshaver_state::sheepshaver_state()
 {
-	ppc_cpu = NULL;
-	tmDescList = NULL;
-	video_buffer = NULL;
-	video_buffer_size = 0;
-	initialize_tvect();
-	time_state.microseconds = 0;
+	memset(this, 0, sizeof *this);
 	time_state.base_time = 3487370000;
-	record_recording = play_recording = NULL;
 	pthread_barrier_init(&tick_barrier, NULL, 2);
-	tick_stepping = false;
 }
 
 void sheepshaver_state::initialize_tvect(void)
 {
-	bzero(&macos_tvect, sizeof macos_tvect);
+	memset(&macos_tvect, 0, sizeof macos_tvect);
 }
 
 void read_exactly(void *dest, int fd, size_t length)

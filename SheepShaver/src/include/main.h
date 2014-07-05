@@ -21,6 +21,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <string.h>
+
 // Global variables
 extern void *TOC;				// TOC pointer
 extern void *R13;				// r13 register
@@ -39,6 +41,10 @@ extern system_info SysInfo;		// System information
 struct M68kRegisters {
 	uint32 d[8];
 	uint32 a[8];
+
+	M68kRegisters(void) {
+		memset(this, 0, sizeof *this);
+	}
 };
 
 
