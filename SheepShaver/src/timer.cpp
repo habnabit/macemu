@@ -272,6 +272,7 @@ static void timer_thread_resume(void)
 	}
 	pthread_mutex_unlock(&suspend_count_lock);
 }
+#endif
 
 void sheepshaver_state::save_descs(int fd)
 {
@@ -286,8 +287,10 @@ void sheepshaver_state::save_descs(int fd)
 void sheepshaver_state::load_descs(int fd)
 {
 	TMDesc *prev = NULL, *first = NULL, *cur;
+#if PRECISE_TIMING
 	timer_thread_suspend();
 	pthread_mutex_lock(&wakeup_time_lock);
+#endif
 	clear_descs();
 	while (1) {
 		cur = new TMDesc;
@@ -308,11 +311,12 @@ void sheepshaver_state::load_descs(int fd)
 		prev->next = NULL;
 	}
 	tmDescList = first;
+#if PRECISE_TIMING
 	pthread_mutex_unlock(&wakeup_time_lock);
 	timer_thread_resume();
 	assert(suspend_count == 0);
-}
 #endif
+}
 
 
 /*

@@ -309,7 +309,7 @@ static inline int testandset(volatile int *p)
 	__asm__ __volatile__("0: cs    %0,%1,0(%2)\n"
 						 "   jl    0b"
 						 : "=&d" (ret)
-						 : "r" (1), "a" (p), "0" (*p) 
+						 : "r" (1), "a" (p), "0" (*p)
 						 : "cc", "memory" );
 	return ret;
 }
@@ -358,7 +358,7 @@ static inline int testandset(volatile int *p)
 	__asm__ __volatile__("swp %0, %1, [%2]"
 						 : "=r"(ret)
 						 : "0"(1), "r"(p));
-	
+
 	return ret;
 }
 #endif
@@ -417,15 +417,6 @@ typedef struct timeval tm_time_t;
 #define VAX_FLOAT_FORMAT 2
 #define IBM_FLOAT_FORMAT 3
 #define C4X_FLOAT_FORMAT 4
-
-// High-precision timing
-#if defined(HAVE_PTHREADS) && defined(HAVE_CLOCK_NANOSLEEP)
-#define PRECISE_TIMING 1
-#define PRECISE_TIMING_POSIX 1
-#elif defined(HAVE_PTHREADS) && defined(__MACH__)
-#define PRECISE_TIMING 1
-#define PRECISE_TIMING_MACH 1
-#endif
 
 // Timing functions
 extern uint64 GetTicks_usec(void);

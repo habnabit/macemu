@@ -38,7 +38,7 @@
 #include "thunks.h"
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 #include "debug.h"
 
 #include "app.hpp"

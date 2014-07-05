@@ -33,6 +33,7 @@ extern int16 PrimeTime(uint32 tm, int32 time);
 extern void Microseconds(uint32 &hi, uint32 &lo);
 
 extern uint32 TimerDateTime(void);
+extern uint32 TimerDateTimeTicks(void);
 
 // System specific and internal functions/data
 extern void timer_current_time(tm_time_t &t);

@@ -73,6 +73,11 @@ uint32 TimerDateTime(void)
 	return the_app->time_state.base_time + (the_app->time_state.microseconds / 1000000);
 }
 
+uint32 TimerDateTimeTicks(void)
+{
+	return (the_app->time_state.base_time * 1000000) + the_app->time_state.microseconds;
+}
+
 
 /*
  *  Get current time
@@ -80,12 +85,11 @@ uint32 TimerDateTime(void)
 
 void timer_current_time(tm_time_t &t)
 {
-#ifdef HAVE_CLOCK_GETTIME
-	clock_gettime(CLOCK_REALTIME, &t);
-#elif defined(__MACH__)
-	mach_current_time(t);
+	t.tv_sec = TimerDateTime();
+#if defined(HAVE_CLOCK_GETTIME) || defined(__MACH__)
+	t.tv_nsec = (the_app->time_state.microseconds % 100000) * 1000;
 #else
-	gettimeofday(&t, NULL);
+	t.tv_usec = the_app->time_state.microseconds % 100000;
 #endif
 }
 

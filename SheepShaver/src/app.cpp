@@ -10,11 +10,12 @@
 
 sheepshaver_state::sheepshaver_state()
 {
+	ppc_cpu = NULL;
 	video_buffer = NULL;
 	video_buffer_size = 0;
 	initialize_tvect();
 	time_state.microseconds = 0;
-	time_state.base_time = TimeToMacTime(time(NULL));
+	time_state.base_time = 3487370000;
 	record_recording = play_recording = NULL;
 	pthread_barrier_init(&tick_barrier, NULL, 2);
 	tick_stepping = false;
