@@ -12,7 +12,7 @@
 
 recording_frame_block_t::recording_frame_block_t()
 {
-	bzero(this, sizeof *this);
+	memset(this, 0, sizeof *this);
 }
 
 void recording_frame_block_t::dump(void)

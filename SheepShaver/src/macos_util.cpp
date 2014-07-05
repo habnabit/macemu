@@ -197,7 +197,7 @@ uint32 FindLibSymbol(const char *lib_str, const char *sym_str)
 		if (r.d[0])
 			return 0;
 
-		bzero(&r, sizeof r);
+		memset(&r, 0, sizeof r);
 		// Find symbol
 		static const uint8 proc2_template[] = {
 			0x55, 0x8f,					// subq.l	#2,a7

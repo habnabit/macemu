@@ -277,7 +277,7 @@ static void timer_thread_resume(void)
 void sheepshaver_state::save_descs(int fd)
 {
 	TMDesc desc;
-	bzero(&desc, sizeof desc);
+	memset(&desc, 0, sizeof desc);
 	for (TMDesc *cur = tmDescList; cur; cur = cur->next) {
 		write_exactly(cur, fd, sizeof *cur);
 	}

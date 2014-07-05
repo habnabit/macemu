@@ -47,7 +47,7 @@ video_state_t::video_state_t()
 	video_activated = false;
 	screen_base = 0;
 	display_type = DIS_INVALID;
-	bzero(MacCursor, sizeof MacCursor);
+	memset(MacCursor, 0, sizeof MacCursor);
 	MacCursor[0] = 16;
 	MacCursor[1] = 1;
 	save_conf_id = APPLE_W_640x480;

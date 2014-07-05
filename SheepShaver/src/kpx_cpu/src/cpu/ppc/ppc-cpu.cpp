@@ -350,7 +350,7 @@ void *powerpc_cpu::operator new(size_t size)
 	blk->signature = 0x53435055;		/* 'SCPU' */
 	blk->offset = ofs + (&blk->data[0] - (uint8 *)blk);
 	assert((((uintptr)&blk->data) % ALIGN) == 0);
-	bzero(&blk->data[0], size);
+	memset(&blk->data[0], 0, size);
 	return &blk->data[0];
 }
 
