@@ -43,10 +43,6 @@
 #include <sys/utsname.h>
 #endif
 
-#define DEBUG 1
-#include "debug.h"
-
-
 #ifdef HAVE_MACH_VM
 #ifndef HAVE_MACH_TASK_SELF
 #ifdef HAVE_TASK_SELF
