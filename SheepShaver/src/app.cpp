@@ -11,6 +11,7 @@
 sheepshaver_state::sheepshaver_state()
 {
 	ppc_cpu = NULL;
+	tmDescList = NULL;
 	video_buffer = NULL;
 	video_buffer_size = 0;
 	initialize_tvect();

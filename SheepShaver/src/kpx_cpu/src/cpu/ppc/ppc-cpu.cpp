@@ -316,7 +316,10 @@ void powerpc_cpu::enable_jit(uint32 cache_size)
 	use_jit = true;
 	if (cache_size)
 		codegen.set_cache_size(cache_size);
-	codegen.initialize();
+	if (!codegen.initialize()) {
+		fprintf(stderr, "powerpc_cpu: Could not initialize code generator\n");
+		abort();
+	}
 }
 #endif
 
@@ -347,6 +350,7 @@ void *powerpc_cpu::operator new(size_t size)
 	blk->signature = 0x53435055;		/* 'SCPU' */
 	blk->offset = ofs + (&blk->data[0] - (uint8 *)blk);
 	assert((((uintptr)&blk->data) % ALIGN) == 0);
+	bzero(&blk->data[0], size);
 	return &blk->data[0];
 }
 
