@@ -747,6 +747,12 @@ int main(int argc, char **argv)
 				gui_connection_path = argv[i];
 				argv[i] = NULL;
 			}
+		} else if (strcmp(argv[i], "--record") == 0) {
+			argv[i] = NULL;
+			the_app->start_recording();
+		} else if (strcmp(argv[i], "--playback") == 0) {
+			argv[i] = NULL;
+			the_app->load_recording("recording");
 		} else if (valid_vmdir(argv[i])) {
 			vmdir = argv[i];
 			argv[i] = NULL;
