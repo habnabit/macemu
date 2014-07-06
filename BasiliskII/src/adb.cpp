@@ -244,7 +244,6 @@ void ADBMouseMoved(int x, int y)
 	B2_unlock_mutex(mouse_lock);
 	the_app->record(OP_MOUSE_XY, (uint64)mouse_x | ((uint64)mouse_y << 32));
 	SetInterruptFlag(INTFLAG_ADB);
-	TriggerInterrupt();
 }
 
 
@@ -257,7 +256,6 @@ void ADBMouseDown(int button)
 	mouse_button[button] = true;
 	the_app->record(OP_MOUSE_DOWN, button);
 	SetInterruptFlag(INTFLAG_ADB);
-	TriggerInterrupt();
 }
 
 
@@ -270,7 +268,6 @@ void ADBMouseUp(int button)
 	mouse_button[button] = false;
 	the_app->record(OP_MOUSE_UP, button);
 	SetInterruptFlag(INTFLAG_ADB);
-	TriggerInterrupt();
 }
 
 
@@ -303,7 +300,6 @@ void ADBKeyDown(int code)
 
 	// Trigger interrupt
 	SetInterruptFlag(INTFLAG_ADB);
-	TriggerInterrupt();
 }
 
 
@@ -323,7 +319,6 @@ void ADBKeyUp(int code)
 
 	// Trigger interrupt
 	SetInterruptFlag(INTFLAG_ADB);
-	TriggerInterrupt();
 }
 
 

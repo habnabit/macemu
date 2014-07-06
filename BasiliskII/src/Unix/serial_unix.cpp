@@ -239,7 +239,7 @@ int16 XSERDPort::open(uint16 config)
 	if (sem_init(&input_signal, 0, 0) < 0)
 		goto open_error;
 	if (sem_init(&output_signal, 0, 0) < 0)
-		goto open_error; 
+		goto open_error;
 	input_thread_active = (pthread_create(&input_thread, &thread_attr, input_func, this) == 0);
 	output_thread_active = (pthread_create(&output_thread, &thread_attr, output_func, this) == 0);
 	if (!input_thread_active || !output_thread_active)
@@ -566,7 +566,7 @@ bool XSERDPort::open_pty(void)
 	protocol = pty;
 	if (!pty_allocate(&fd, &slavefd, slave, sizeof(slave)))
 		return false;
-		
+
 	fflush(stdout);
 	fflush(stderr);
 	switch (pid = fork()) {
@@ -766,7 +766,6 @@ void *XSERDPort::input_func(void *arg)
 			D(bug(" triggering serial interrupt\n"));
 			s->read_done = true;
 			SetInterruptFlag(INTFLAG_SERIAL);
-			TriggerInterrupt();
 		}
 	}
 	return NULL;
@@ -821,12 +820,11 @@ void *XSERDPort::output_func(void *arg)
 				WriteMacInt32(s->output_pb + ioActCount, 0);
 				WriteMacInt32(s->output_dt + serdtResult, uint16(writErr));
 			}
-	
+
 			// Trigger serial interrupt
 			D(bug(" triggering serial interrupt\n"));
 			s->write_done = true;
 			SetInterruptFlag(INTFLAG_SERIAL);
-			TriggerInterrupt();
 		}
 	}
 	return NULL;

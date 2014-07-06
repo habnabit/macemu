@@ -888,7 +888,6 @@ static void *receive_func(void *arg)
 			// Trigger Ethernet interrupt
 			D(bug(" packet received, triggering Ethernet interrupt\n"));
 			SetInterruptFlag(INTFLAG_ETHER);
-			TriggerInterrupt();
 
 			// Wait for interrupt acknowledge by EtherInterrupt()
 			sem_wait(&int_ack);

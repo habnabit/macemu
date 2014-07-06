@@ -199,7 +199,6 @@ static void stream_func(void *arg, uint8 *stream, int stream_len)
 		// Trigger audio interrupt to get new buffer
 		D(bug("stream: triggering irq\n"));
 		SetInterruptFlag(INTFLAG_AUDIO);
-		TriggerInterrupt();
 		D(bug("stream: waiting for ack\n"));
 		SDL_SemWait(audio_irq_done_sem);
 		D(bug("stream: ack received\n"));
