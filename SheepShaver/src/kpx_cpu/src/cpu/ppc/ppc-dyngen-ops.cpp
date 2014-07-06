@@ -617,15 +617,6 @@ void OPPROTO op_spcflags_clear(void)
 	powerpc_dyngen_helper::spcflags().clear(PARAM1);
 }
 
-#if defined(__x86_64__)
-#define FAST_COMPARE_SPECFLAGS_DISPATCH(SPCFLAGS, TARGET) \
-		asm volatile ("test %0,%0 ; jz " #TARGET : : "r" (SPCFLAGS))
-#endif
-#ifndef FAST_COMPARE_SPECFLAGS_DISPATCH
-#define FAST_COMPARE_SPECFLAGS_DISPATCH(SPCFLAGS, TARGET) \
-		if (SPCFLAGS == 0) DYNGEN_FAST_DISPATCH(TARGET)
-#endif
-
 void OPPROTO op_spcflags_check(void)
 {
 	asm volatile ("cmp $200,%0 ; jne __op_jmp0" : : "r" (++powerpc_dyngen_helper::jit_cycles()));
