@@ -1493,7 +1493,7 @@ powerpc_cpu::compile_block(uint32 entry_point)
 			goto do_invoke;
 		  do_illegal:
 			func = (func_t)nv_mem_fun(&powerpc_cpu::execute_illegal).ptr();
-			goto do_invoke;	
+			goto do_invoke;
 		  do_invoke:
 #if PPC_PROFILE_GENERIC_CALLS
 			if (ii->mnemo <= PPC_I(MAX)) {
