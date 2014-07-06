@@ -371,7 +371,7 @@ private:
 
 #if PPC_DECODE_CACHE
 	// Decode Cache
-	static const uint32 DECODE_CACHE_MAX_ENTRIES = 32768;
+	static const uint32 DECODE_CACHE_MAX_ENTRIES = 1048576;
 	static const uint32 DECODE_CACHE_SIZE = DECODE_CACHE_MAX_ENTRIES * sizeof(block_info::decode_info);
 	block_info::decode_info * decode_cache;
 	block_info::decode_info * decode_cache_p;

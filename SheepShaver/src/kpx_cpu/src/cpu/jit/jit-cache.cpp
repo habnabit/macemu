@@ -31,7 +31,7 @@ const int JIT_CACHE_SIZE = 2 * 1024;
 #elif defined(__powerpc__) || defined(__ppc__)
 const int JIT_CACHE_SIZE = 4 * 1024;
 #else
-const int JIT_CACHE_SIZE = 8 * 1024;
+const int JIT_CACHE_SIZE = 256 * 1024;
 #endif
 const int JIT_CACHE_SIZE_GUARD = 4096;
 
@@ -76,7 +76,7 @@ basic_jit_cache::init_translation_cache(uint32 size)
 		tcode_start = NULL;
 		return false;
 	}
-	
+
   done:
 	D(bug("basic_jit_cache: Translation cache: %d KB at %p\n", cache_size / 1024, tcode_start));
 	code_start = tcode_start;
