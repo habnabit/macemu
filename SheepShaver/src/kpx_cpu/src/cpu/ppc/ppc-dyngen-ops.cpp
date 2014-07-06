@@ -105,6 +105,7 @@ struct powerpc_dyngen_helper {
 	static INLINE powerpc_spcflags & spcflags()	{ return CPU->spcflags(); }
 	static INLINE void set_cr(int crfd, int v)	{ CPU->cr().set(crfd, v); }
 	static INLINE powerpc_registers *regs()		{ return &CPU->regs(); }
+	static INLINE uint64 & jit_cycles(void)     { return CPU->jit_cycles; }
 
 #ifndef REG_T3
 	static INLINE uintptr & reg_T3()			{ return CPU->codegen.reg_T3; }
@@ -627,7 +628,7 @@ void OPPROTO op_spcflags_clear(void)
 
 void OPPROTO op_spcflags_check(void)
 {
-	FAST_COMPARE_SPECFLAGS_DISPATCH(powerpc_dyngen_helper::spcflags().get(), __op_jmp0);
+	asm volatile ("cmp $200,%0 ; jne __op_jmp0" : : "r" (++powerpc_dyngen_helper::jit_cycles()));
 }
 
 
@@ -1452,7 +1453,7 @@ DEFINE_OP(31);
 void OPPROTO op_load_ad_V##REG##_VR##N(void)	\
 {												\
 	reg_V##REG = (uintptr)&CPU->vr(N);			\
-}												
+}
 #define DEFINE_REG(N)							\
 DEFINE_OP(D,N);									\
 DEFINE_OP(0,N);									\

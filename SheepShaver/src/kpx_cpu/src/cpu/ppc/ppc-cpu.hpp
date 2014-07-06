@@ -127,8 +127,9 @@ public:
 	clock_t execute_start_time;
 	uint64 cycles;
 	uint64 period_cycles;
+	uint64 jit_cycles;
 	uint64 next;
-
+	void inc_cycles(void);
 
 protected:
 

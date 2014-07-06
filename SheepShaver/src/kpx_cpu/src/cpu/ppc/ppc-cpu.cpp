@@ -37,7 +37,7 @@
 #include "mon_disass.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
 
 #include "app.hpp"
@@ -521,7 +521,9 @@ spcflags_check_result_t powerpc_cpu::check_spcflags()
 	if (spcflags().test(SPCFLAG_CPU_HANDLE_INTERRUPT)) {
 		spcflags().clear(SPCFLAG_CPU_HANDLE_INTERRUPT);
 		static bool processing_interrupt = false;
-		if (!processing_interrupt) {
+		if (processing_interrupt) {
+			D(bug("already in interrupt\n"));
+		} else {
 			processing_interrupt = true;
 			powerpc_registers r;
 			powerpc_registers::interrupt_copy(r, regs());
@@ -578,6 +580,18 @@ void *powerpc_cpu::compile_chain_block(block_info *sbi)
 }
 #endif
 
+inline void powerpc_cpu::inc_cycles(void)
+{
+	++cycles; ++period_cycles;
+	if (period_cycles != CYCLES_PER_60HZ) return;
+	period_cycles = 0;
+
+	the_app->advance_microseconds(16625);
+	WriteMacInt32(0x20c, TimerDateTime());
+	SetInterruptFlag(INTFLAG_VIA);
+	trigger_interrupt();
+}
+
 void powerpc_cpu::execute(uint32 entry)
 {
 	bool invalidated_cache = false;
@@ -596,23 +610,9 @@ void powerpc_cpu::execute(uint32 entry)
 			for (;;) {
 				// Execute all cached blocks
 				for (;;) {
+					jit_cycles = 0;
 					codegen.execute(bi->entry_point);
-
-					++cycles; ++period_cycles;
-					if (period_cycles == CYCLES_PER_60HZ) {
-						next += 16625;
-						int64 delay = next - GetTicks_usec();
-						if (delay < 0) D(bug("processor delay: %ld\n", delay));
-						if (delay > 0) Delay_usec(delay);
-						else if (delay < -16625) next = GetTicks_usec();
-						if (cycles % 100000 == 0) {
-							uint64 delta = (clock() - execute_start_time) / CLOCKS_PER_SEC;
-							if (delta) {
-								D(bug("%10lu cycles; %10lu cycles per sec\n", cycles, cycles / delta));
-							}
-						}
-						period_cycles = 0;
-					}
+					inc_cycles();
 
 					if (!spcflags().empty()) {
 						switch (check_spcflags()) {

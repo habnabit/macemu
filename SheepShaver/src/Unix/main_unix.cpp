@@ -1011,8 +1011,8 @@ int main(int argc, char **argv)
 
 	// Start 60Hz thread
 	tick_thread_cancel = false;
-	tick_thread_active = (pthread_create(&tick_thread, NULL, tick_func, NULL) == 0);
-	D(bug("Tick thread installed (%ld)\n", tick_thread));
+	//tick_thread_active = (pthread_create(&tick_thread, NULL, tick_func, NULL) == 0);
+	//D(bug("Tick thread installed (%ld)\n", tick_thread));
 
 	// Start NVRAM watchdog thread
 	memcpy(last_xpram, XPRAM, XPRAM_SIZE);

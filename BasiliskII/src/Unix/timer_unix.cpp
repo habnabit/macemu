@@ -347,27 +347,6 @@ static int idle_sem_ok = -1;
 
 void idle_wait(void)
 {
-#ifdef IDLE_USES_COND_WAIT
-	pthread_mutex_lock(&idle_lock);
-	pthread_cond_wait(&idle_cond, &idle_lock);
-	pthread_mutex_unlock(&idle_lock);
-#else
-#ifdef IDLE_USES_SEMAPHORE
-	LOCK_IDLE;
-	if (idle_sem_ok < 0)
-		idle_sem_ok = (sem_init(&idle_sem, 0, 0) == 0);
-	if (idle_sem_ok > 0) {
-		idle_sem_ok++;
-		UNLOCK_IDLE;
-		sem_wait(&idle_sem);
-		return;
-	}
-	UNLOCK_IDLE;
-#endif
-
-	// Fallback: sleep 10 ms
-	Delay_usec(10000);
-#endif
 }
 
 
@@ -377,18 +356,4 @@ void idle_wait(void)
 
 void idle_resume(void)
 {
-#ifdef IDLE_USES_COND_WAIT
-	pthread_cond_signal(&idle_cond);
-#else
-#ifdef IDLE_USES_SEMAPHORE
-	LOCK_IDLE;
-	if (idle_sem_ok > 1) {
-		idle_sem_ok--;
-		UNLOCK_IDLE;
-		sem_post(&idle_sem);
-		return;
-	}
-	UNLOCK_IDLE;
-#endif
-#endif
 }
