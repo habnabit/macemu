@@ -806,6 +806,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	setvbuf(stdout, NULL, _IOLBF, 0);
+
 #ifdef USE_SDL
 	// Initialize SDL system
 	if (!init_sdl())
