@@ -584,7 +584,7 @@ void *powerpc_cpu::compile_chain_block(block_info *sbi)
 inline void powerpc_cpu::inc_cycles(void)
 {
 	++cycles;
-	if (++period_cycles < CYCLES_PER_60HZ / 8) return;
+	if (++period_cycles < CYCLES_PER_60HZ) return;
 	period_cycles = 0;
 	the_app->advance_microseconds(16625);
 	HandleSDLEvents();
