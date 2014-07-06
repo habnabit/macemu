@@ -586,6 +586,19 @@ inline void powerpc_cpu::inc_cycles(void)
 	++cycles;
 	if (++period_cycles < CYCLES_PER_60HZ) return;
 	period_cycles = 0;
+
+	next += 16625;
+	int64 delay = next - GetTicks_usec();
+	if (delay < 0) D(bug("processor delay: %ld\n", delay));
+	if (delay > 0) Delay_usec(delay);
+	else if (delay < -16625) next = GetTicks_usec();
+	if (cycles % 100000 == 0) {
+		uint64 delta = (clock() - execute_start_time) / CLOCKS_PER_SEC;
+		if (delta) {
+			D(bug("%10lu cycles; %10lu cycles per sec\n", cycles, cycles / delta));
+		}
+	}
+
 	the_app->advance_microseconds(16625);
 	HandleSDLEvents();
 	WriteMacInt32(0x20c, TimerDateTime());
