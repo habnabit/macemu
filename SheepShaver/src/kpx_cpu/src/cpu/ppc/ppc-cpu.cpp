@@ -26,6 +26,7 @@
 #include "cpu/ppc/ppc-cpu.hpp"
 #ifndef SHEEPSHAVER
 #include "basic-kernel.hpp"
+#include "video.h"
 #endif
 
 #if PPC_ENABLE_JIT
@@ -582,11 +583,11 @@ void *powerpc_cpu::compile_chain_block(block_info *sbi)
 
 inline void powerpc_cpu::inc_cycles(void)
 {
-	++cycles; ++period_cycles;
-	if (period_cycles != CYCLES_PER_60HZ) return;
+	++cycles;
+	if (++period_cycles < CYCLES_PER_60HZ / 8) return;
 	period_cycles = 0;
-
 	the_app->advance_microseconds(16625);
+	HandleSDLEvents();
 	WriteMacInt32(0x20c, TimerDateTime());
 	SetInterruptFlag(INTFLAG_VIA);
 	trigger_interrupt();

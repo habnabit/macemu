@@ -165,4 +165,6 @@ public:
 	video_state_t();
 };
 
+void HandleSDLEvents(void);
+
 #endif

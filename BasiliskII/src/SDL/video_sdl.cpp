@@ -1786,7 +1786,7 @@ static int event2keycode(SDL_KeyboardEvent const &ev, bool key_down)
  *  SDL event handling
  */
 
-static void handle_events(void)
+void HandleSDLEvents(void)
 {
 	SDL_Event events[10];
 	const int n_max_events = sizeof(events) / sizeof(events[0]);
@@ -2267,12 +2267,8 @@ static void VideoRefreshInit(void)
 
 static inline void do_video_refresh(void)
 {
-	// Handle SDL events
-	handle_events();
-
 	// Update display
 	video_refresh();
-
 
 	// Set new palette if it was changed
 	handle_palette_changes();
