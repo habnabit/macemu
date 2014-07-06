@@ -90,6 +90,8 @@ void sheepshaver_state::do_save_load(void)
 			write_exactly(video_buffer, fd, video_buffer_size);
 		}
 		write_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		write_exactly(&ppc_cpu->cycles, fd, sizeof ppc_cpu->cycles);
+		write_exactly(&ppc_cpu->period_cycles, fd, sizeof ppc_cpu->period_cycles);
 		write_exactly(&video_state, fd, sizeof video_state);
 		save_descs(fd);
 	} else if (save_op == OP_LOAD_STATE) {
@@ -116,6 +118,8 @@ void sheepshaver_state::do_save_load(void)
 			read_exactly(video_buffer, fd, video_buffer_size);
 		}
 		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
+		read_exactly(&ppc_cpu->cycles, fd, sizeof ppc_cpu->cycles);
+		read_exactly(&ppc_cpu->period_cycles, fd, sizeof ppc_cpu->period_cycles);
 		read_exactly(&video_state, fd, sizeof video_state);
 		load_descs(fd);
 		ppc_cpu->invalidate_cache();
