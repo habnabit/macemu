@@ -587,15 +587,26 @@ inline void powerpc_cpu::inc_cycles(void)
 	if (++period_cycles < CYCLES_PER_60HZ) return;
 	period_cycles = 0;
 
-	next += 16625;
-	int64 delay = next - GetTicks_usec();
-	if (delay > 0) Delay_usec(delay);
-	else if (delay < -16625) next = GetTicks_usec();
-
 	the_app->advance_microseconds(16625);
+	do {
+		next += 16625;
+		int64 delay = next - GetTicks_usec();
+		if (delay > 0) Delay_usec(delay);
+		else if (delay < -16625) next = GetTicks_usec();
+
+		if (the_app->tick_stepping) {
+			if (the_app->tick_step) {
+				the_app->tick_step = false;
+			} else {
+				HandleSDLEvents();
+				continue;
+			}
+		}
+		break;
+	} while (1);
+	SetInterruptFlag(INTFLAG_VIA);
 	HandleSDLEvents();
 	WriteMacInt32(0x20c, TimerDateTime());
-	SetInterruptFlag(INTFLAG_VIA);
 	trigger_interrupt();
 }
 

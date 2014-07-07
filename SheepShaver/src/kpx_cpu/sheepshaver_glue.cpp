@@ -889,11 +889,6 @@ void TriggerInterrupt(void)
 
 void HandleInterrupt(powerpc_registers *r)
 {
-#ifdef USE_SDL_VIDEO
-	// We must fill in the events queue in the same thread that did call SDL_SetVideoMode()
-	SDL_PumpEvents();
-#endif
-
 	// Do nothing if interrupts are disabled
 	if (int32(ReadMacInt32(XLM_IRQ_NEST)) > 0)
 		return;

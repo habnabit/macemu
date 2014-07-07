@@ -1738,14 +1738,11 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 	case SDLK_F12:
 		if (!key_down) {
 			if (is_shift_down(ks)) {
-				if (the_app->tick_stepping) {
-					the_app->tick_stepping = false;
-					pthread_barrier_wait(&the_app->tick_barrier);
-				} else {
-					the_app->tick_stepping = true;
-				}
+				the_app->tick_stepping = !the_app->tick_stepping;
+				D(bug("tick stepping: %d\n", the_app->tick_stepping));
 			} else if (the_app->tick_stepping) {
-				pthread_barrier_wait(&the_app->tick_barrier);
+				the_app->tick_step = true;
+				D(bug("stepped frame\n"));
 			}
 		}
 		return -2;
@@ -1788,6 +1785,7 @@ static int event2keycode(SDL_KeyboardEvent const &ev, bool key_down)
 
 void HandleSDLEvents(void)
 {
+	SDL_PumpEvents();
 	SDL_Event events[10];
 	const int n_max_events = sizeof(events) / sizeof(events[0]);
 	int n_events;
@@ -2312,8 +2310,6 @@ static int redraw_func(void *arg)
 			thread_stop_ack = true;
 			continue;
 		}
-
-		if (the_app->tick_stepping) TriggerInterrupt();
 
 		// Process pending events and update display
 		do_video_refresh();

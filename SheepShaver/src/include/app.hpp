@@ -128,8 +128,8 @@ public:
 		if (record_recording) record_recording->record(op, time_state.microseconds, arg);
 	}
 
-	pthread_barrier_t tick_barrier;
 	bool tick_stepping;
+	bool tick_step;
 };
 
 extern sheepshaver_state *the_app;

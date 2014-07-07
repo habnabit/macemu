@@ -12,7 +12,6 @@ sheepshaver_state::sheepshaver_state()
 {
 	memset(this, 0, sizeof *this);
 	time_state.base_time = 3487370000;
-	pthread_barrier_init(&tick_barrier, NULL, 2);
 }
 
 void sheepshaver_state::initialize_tvect(void)

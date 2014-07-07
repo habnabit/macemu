@@ -1374,10 +1374,6 @@ static void *tick_func(void *arg)
 			Delay_usec(delay);
 		else if (delay < -16625)
 			next = GetTicks_usec();
-		if (the_app->tick_stepping) {
-			pthread_barrier_wait(&the_app->tick_barrier);
-			D(bug("stepped frame to tick %ld\n", ticks));
-		}
 		ticks++;
 		the_app->advance_microseconds(16625);
 
