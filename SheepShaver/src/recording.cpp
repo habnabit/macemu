@@ -24,6 +24,17 @@ void recording_frame_block_t::dump(void)
 	}
 }
 
+void recording_frame_block_t::clear(void)
+{
+	memset(frames, 0, sizeof frames);
+}
+
+void recording_frame_block_t::clear_to_end(uint16 frame)
+{
+	if (frame >= RECORDING_BLOCK_FRAMES) return;
+	memset(&frames[frame], 0, (sizeof *frames) * (RECORDING_BLOCK_FRAMES - frame));
+}
+
 recording_t::recording_t(time_state_t *time_state)
 {
 	first_block = current_block = new recording_frame_block_t;
@@ -50,11 +61,9 @@ recording_t::recording_t(const char *filename)
 		read_exactly(fb, fd, sizeof *fb);
 		if (prev) {
 			prev->next = fb;
+			fb->prev = prev;
 		}
 		prev = fb;
-	}
-	if (prev) {
-		prev->next = NULL;
 	}
 	close(fd);
 	first_block = current_block = &_blocks[0];
@@ -76,12 +85,19 @@ void recording_t::record(recording_op_t op, uint64 microseconds, uint64 arg)
 	frame->microseconds = microseconds;
 	frame->arg = arg;
 	if (current_frame >= RECORDING_BLOCK_FRAMES) {
-		recording_frame_block_t *next = new recording_frame_block_t;
-		D(bug("allocating new block\n"));
-		current_block->next = next;
+		recording_frame_block_t *next;
+		if (!current_block->next) {
+			next = new recording_frame_block_t;
+			D(bug("allocating new block\n"));
+			current_block->next = next;
+			next->prev = current_block;
+			++header.frame_blocks;
+		} else {
+			next = current_block->next;
+			next->clear();
+		}
 		current_block = next;
 		current_frame = 0;
-		++header.frame_blocks;
 	}
 }
 
@@ -114,27 +130,13 @@ void recording_t::play_through(uint64 end)
 {
 	if (done) return;
 	do {
-		recording_frame_t *f = &current_block->frames[current_frame];
+		recording_frame_t *f = current_frame_ptr();
 		if (f->microseconds > end) {
 			if (!countdown) {
 				D(bug("%lu us until next\n", f->microseconds - end));
 				countdown = 60;
 			} else --countdown;
 			break;
-		}
-		if (f->op == OP_NO_OP) {
-			D(bug("finished playback\n"));
-			done = true;
-			break;
-		}
-		if (++current_frame >= RECORDING_BLOCK_FRAMES) {
-			if (!current_block->next) {
-				D(bug("finished playback\n"));
-				done = true;
-				break;
-			}
-			current_block = current_block->next;
-			current_frame = 0;
 		}
 		D(bug("playback: %04x %d %lx %lu\n", current_frame, f->op, f->arg, f->microseconds));
 		switch (f->op) {
@@ -158,5 +160,27 @@ void recording_t::play_through(uint64 end)
 		default:
 			D(bug("invalid op: %d", f->op));
 		}
+		if (advance_frame()) {
+			D(bug("finished playback\n"));
+			done = true;
+			break;
+		}
 	} while (1);
+}
+
+void recording_t::rewind_clearing(uint64 end)
+{
+	D(bug("rewinding to %lu\n", end));
+	do {
+		if (retreat_frame_clearing()) return;
+		recording_frame_t *f = current_frame_ptr();
+		if (f->microseconds <= end) {
+			D(bug("done rewinding\n"));
+			advance_frame();
+			break;
+		}
+		D(bug("rewound past %lu\n", f->microseconds));
+	} while (1);
+	D(bug("clearing through %hu\n", current_frame));
+	current_block->clear_to_end(current_frame);
 }

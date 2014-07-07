@@ -125,6 +125,9 @@ void sheepshaver_state::do_save_load(void)
 		reopen_video();
 		video_set_palette();
 		tick_stepping = true;
+		if (record_recording) {
+			record_recording->rewind_clearing(time_state.microseconds);
+		}
 	}
 	close(fd);
 }
