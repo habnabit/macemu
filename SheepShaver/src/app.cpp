@@ -124,6 +124,7 @@ void sheepshaver_state::do_save_load(void)
 		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
+		tick_stepping = true;
 	}
 	close(fd);
 }
