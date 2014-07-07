@@ -1742,7 +1742,6 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 				D(bug("tick stepping: %d\n", the_app->tick_stepping));
 			} else if (the_app->tick_stepping) {
 				the_app->tick_step = true;
-				D(bug("stepped frame\n"));
 			}
 		}
 		return -2;
