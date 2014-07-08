@@ -596,7 +596,7 @@ inline void powerpc_cpu::inc_cycles(void)
 
 		if (the_app->tick_stepping) {
 			if (the_app->tick_step) {
-				the_app->tick_step = false;
+				--the_app->tick_step;
 				D(bug("stepped a frame (%lu)\n", cycles / CYCLES_PER_60HZ));
 			} else {
 				HandleSDLEvents();

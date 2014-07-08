@@ -1695,54 +1695,43 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 
 #define SAVESTATE(n) \
 		if (!key_down) {												\
-			if (is_shift_down(ks)) {									\
-				D(bug("saving %d\n", (n)));								\
-				the_app->save_state(n);									\
-			} else {													\
-				D(bug("loading %d\n", (n)));							\
-				the_app->load_state(n);									\
-			}															\
+			D(bug("saving %d\n", (n)));									\
+			the_app->save_state(n);										\
+		}																\
+		return -2;
+#define LOADSTATE(n) \
+		if (!key_down) {												\
+			D(bug("loading %d\n", (n)));								\
+			the_app->load_state(n);										\
 		}																\
 		return -2;
 	case SDLK_F1: SAVESTATE(0)
 	case SDLK_F2: SAVESTATE(1)
 	case SDLK_F3: SAVESTATE(2)
 	case SDLK_F4: SAVESTATE(3)
-	case SDLK_F5: SAVESTATE(4)
-	case SDLK_F6: SAVESTATE(5)
-	case SDLK_F7: SAVESTATE(6)
-	case SDLK_F8: SAVESTATE(7)
+	case SDLK_F5: LOADSTATE(0)
+	case SDLK_F6: LOADSTATE(1)
+	case SDLK_F7: LOADSTATE(2)
+	case SDLK_F8: LOADSTATE(3)
 	case SDLK_F9:
-		if (!key_down) {
-			if (is_shift_down(ks)) {
-				the_app->start_recording();
-			} else if (the_app->record_recording) {
-				the_app->record_recording->save();
-			}
+		if (!key_down && the_app->record_recording) {
+			the_app->record_recording->save();
 		}
 		return -2;
 	case SDLK_F10:
 		if (!key_down) {
-			the_app->load_recording("recording");
+			the_app->tick_stepping = !the_app->tick_stepping;
+			D(bug("tick stepping: %d\n", the_app->tick_stepping));
 		}
 		return -2;
 	case SDLK_F11:
-		if (!key_down) {
-			if (is_shift_down(ks) && the_app->record_recording) {
-				the_app->record_recording->dump();
-			} else if (the_app->play_recording) {
-				the_app->play_recording->dump();
-			}
+		if (!key_down && the_app->tick_stepping) {
+			the_app->tick_step = 1;
 		}
 		return -2;
 	case SDLK_F12:
-		if (!key_down) {
-			if (is_shift_down(ks)) {
-				the_app->tick_stepping = !the_app->tick_stepping;
-				D(bug("tick stepping: %d\n", the_app->tick_stepping));
-			} else if (the_app->tick_stepping) {
-				the_app->tick_step = true;
-			}
+		if (!key_down && the_app->tick_stepping) {
+			the_app->tick_step = 2;
 		}
 		return -2;
 

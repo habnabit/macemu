@@ -129,7 +129,7 @@ public:
 	}
 
 	bool tick_stepping;
-	bool tick_step;
+	uint8 tick_step;
 };
 
 extern sheepshaver_state *the_app;
