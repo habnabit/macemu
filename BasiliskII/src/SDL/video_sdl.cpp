@@ -1842,7 +1842,7 @@ void HandleSDLEvents(void)
 								caps_on = true;
 							}
 						} else
-							ADBKeyDown(code);
+							the_app->key_down(code);
 						if (code == 0x36)
 							ctrl_down = true;
 					} else {
@@ -1869,7 +1869,7 @@ void HandleSDLEvents(void)
 							caps_on = true;
 						}
 					} else
-						ADBKeyUp(code);
+						the_app->key_up(code);
 					if (code == 0x36)
 						ctrl_down = false;
 				}

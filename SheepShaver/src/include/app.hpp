@@ -12,6 +12,8 @@
 #include "recording.hpp"
 #include "cpu/ppc/ppc-cpu.hpp"
 
+#define MAX_KEYSYM 256
+
 
 class sheepshaver_state;
 
@@ -136,6 +138,26 @@ public:
 	uint8 tick_step;
 
 	volatile uint32 interrupt_flags;
+
+	bool keys_down[MAX_KEYSYM];
+	bool keys_actually_down[MAX_KEYSYM];
+	void calculate_key_differences(void);
+
+	inline void key_state_changed(int code, bool is_down)
+	{
+		if (code < 0 || code >= MAX_KEYSYM) return;
+		keys_down[code] = is_down;
+	}
+
+	inline void key_down(int code)
+	{
+		key_state_changed(code, true);
+	}
+
+	inline void key_up(int code)
+	{
+		key_state_changed(code, false);
+	}
 };
 
 extern sheepshaver_state *the_app;

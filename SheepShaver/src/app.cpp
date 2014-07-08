@@ -2,6 +2,8 @@
 #include <malloc.h>
 #include <errno.h>
 #include <strings.h>
+#include "sysdeps.h"
+#include "adb.h"
 #include "app.hpp"
 
 #define DEBUG 1
@@ -85,6 +87,7 @@ void sheepshaver_state::do_save_load(void)
 		write_exactly((void *)&interrupt_flags, fd, sizeof interrupt_flags);
 		write_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		write_exactly(&time_state, fd, sizeof time_state);
+		write_exactly(keys_actually_down, fd, sizeof keys_actually_down);
 		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			write_exactly(video_buffer, fd, video_buffer_size);
@@ -114,6 +117,7 @@ void sheepshaver_state::do_save_load(void)
 		read_exactly((void *)&interrupt_flags, fd, sizeof interrupt_flags);
 		read_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		read_exactly(&time_state, fd, sizeof time_state);
+		read_exactly(keys_actually_down, fd, sizeof keys_actually_down);
 		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			if (video_buffer) {
@@ -135,6 +139,7 @@ void sheepshaver_state::do_save_load(void)
 		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
+		memset(keys_down, 0, sizeof keys_down);
 		tick_stepping = true;
 	}
 	close(fd);
@@ -167,5 +172,19 @@ void sheepshaver_state::advance_microseconds(uint64 delta)
 	time_state.microseconds += delta;
 	if (play_recording) {
 		play_recording->play_through(time_state.microseconds);
+	}
+}
+
+void sheepshaver_state::calculate_key_differences(void)
+{
+	for (int i = 0; i < MAX_KEYSYM; ++i) {
+		if (keys_down[i] != keys_actually_down[i]) {
+			if (keys_down[i]) {
+				ADBKeyDown(i);
+			} else {
+				ADBKeyUp(i);
+			}
+			keys_actually_down[i] = keys_down[i];
+		}
 	}
 }

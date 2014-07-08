@@ -607,6 +607,7 @@ inline void powerpc_cpu::inc_cycles(void)
 	} while (1);
 	SetInterruptFlag(INTFLAG_VIA);
 	HandleSDLEvents();
+	the_app->calculate_key_differences();
 	WriteMacInt32(0x20c, TimerDateTime());
 	trigger_interrupt();
 }
