@@ -537,11 +537,6 @@ spcflags_check_result_t powerpc_cpu::check_spcflags()
 		spcflags().clear(SPCFLAG_CPU_TRIGGER_INTERRUPT);
 		spcflags().set(SPCFLAG_CPU_HANDLE_INTERRUPT);
 	}
-	if (spcflags().test(SPCFLAG_HANDLE_SAVESTATE)) {
-		spcflags().clear(SPCFLAG_HANDLE_SAVESTATE);
-		the_app->do_save_load();
-		return RESULT_RECOMPILE;
-	}
 #endif
 	if (spcflags().test(SPCFLAG_CPU_ENTER_MON)) {
 		spcflags().clear(SPCFLAG_CPU_ENTER_MON);

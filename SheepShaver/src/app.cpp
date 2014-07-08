@@ -55,14 +55,14 @@ void sheepshaver_state::save_state(int slot)
 {
 	save_slot = slot;
 	save_op = OP_SAVE_STATE;
-	ppc_cpu->spcflags().set(SPCFLAG_HANDLE_SAVESTATE);
+	do_save_load();
 }
 
 void sheepshaver_state::load_state(int slot)
 {
 	save_slot = slot;
 	save_op = OP_LOAD_STATE;
-	ppc_cpu->spcflags().set(SPCFLAG_HANDLE_SAVESTATE);
+	do_save_load();
 }
 
 void sheepshaver_state::do_save_load(void)
