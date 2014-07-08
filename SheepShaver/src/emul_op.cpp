@@ -50,6 +50,8 @@
 #define DEBUG 0
 #include "debug.h"
 
+#include "app.hpp"
+
 
 // TVector of MakeExecutable
 static uint32 MakeExecutableTvec;
@@ -303,7 +305,7 @@ void EmulOp(M68kRegisters *r, uint32 pc, int selector)
 			WriteMacInt16(ReadMacInt32(KernelDataAddr + 0x67c), 0);	// Clear interrupt
 			r->d[0] = 0;
 			if (HasMacStarted()) {
-				if (InterruptFlags & INTFLAG_VIA) {
+				if (the_app->interrupt_flags & INTFLAG_VIA) {
 					ClearInterruptFlag(INTFLAG_VIA);
 #if !PRECISE_TIMING
 					TimerInterrupt();
@@ -320,23 +322,23 @@ void EmulOp(M68kRegisters *r, uint32 pc, int selector)
 
 					r->d[0] = 1;		// Flag: 68k interrupt routine executes VBLTasks etc.
 				}
-				if (InterruptFlags & INTFLAG_SERIAL) {
+				if (the_app->interrupt_flags & INTFLAG_SERIAL) {
 					ClearInterruptFlag(INTFLAG_SERIAL);
 					SerialInterrupt();
 				}
-				if (InterruptFlags & INTFLAG_ETHER) {
+				if (the_app->interrupt_flags & INTFLAG_ETHER) {
 					ClearInterruptFlag(INTFLAG_ETHER);
 					ExecuteNative(NATIVE_ETHER_IRQ);
 				}
-				if (InterruptFlags & INTFLAG_TIMER) {
+				if (the_app->interrupt_flags & INTFLAG_TIMER) {
 					ClearInterruptFlag(INTFLAG_TIMER);
 					TimerInterrupt();
 				}
-				if (InterruptFlags & INTFLAG_AUDIO) {
+				if (the_app->interrupt_flags & INTFLAG_AUDIO) {
 					ClearInterruptFlag(INTFLAG_AUDIO);
 					AudioInterrupt();
 				}
-				if (InterruptFlags & INTFLAG_ADB) {
+				if (the_app->interrupt_flags & INTFLAG_ADB) {
 					ClearInterruptFlag(INTFLAG_ADB);
 					ADBInterrupt();
 				}

@@ -15,6 +15,11 @@ recording_frame_block_t::recording_frame_block_t()
 	memset(this, 0, sizeof *this);
 }
 
+recording_frame_block_t::~recording_frame_block_t()
+{
+	if (next) delete next;
+}
+
 void recording_frame_block_t::dump(void)
 {
 	for (int i = 0; i < RECORDING_BLOCK_FRAMES; ++i) {
@@ -41,40 +46,49 @@ recording_t::recording_t(time_state_t *time_state)
 	current_frame = 0;
 	memcpy(&header.time_state, time_state, sizeof *time_state);
 	header.frame_blocks = 1;
-	_blocks = NULL;
-	countdown = 0;
-	done = false;
-}
-
-recording_t::recording_t(const char *filename)
-{
-	int fd = open(filename, O_RDONLY);
-	recording_frame_block_t *prev = NULL;
-	if (fd < 0) {
-		perror("recording_t: open:");
-		return;
-	}
-	read_exactly(&header, fd, sizeof header);
-	_blocks = new recording_frame_block_t[header.frame_blocks];
-	for (uint32 i = 0; i < header.frame_blocks; ++i) {
-		recording_frame_block_t *fb = &_blocks[i];
-		read_exactly(fb, fd, sizeof *fb);
-		if (prev) {
-			prev->next = fb;
-			fb->prev = prev;
-		}
-		prev = fb;
-	}
-	close(fd);
-	first_block = current_block = &_blocks[0];
-	current_frame = 0;
 	countdown = 0;
 	done = false;
 }
 
 recording_t::~recording_t()
 {
-	if (_blocks) delete[] _blocks;
+	delete first_block;
+}
+
+recording_t::recording_t(const char *filename)
+{
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		perror("recording_t: open:");
+		return;
+	}
+	load_from(fd);
+	close(fd);
+}
+
+recording_t::recording_t(int fd)
+{
+	load_from(fd);
+}
+
+void recording_t::load_from(int fd)
+{
+	recording_frame_block_t *prev = NULL, *fb = NULL;
+	read_exactly(&header, fd, sizeof header);
+	for (uint32 i = 0; i < header.frame_blocks; ++i) {
+		fb = new recording_frame_block_t;
+		read_exactly(fb, fd, sizeof *fb);
+		if (prev) {
+			prev->next = fb;
+			fb->prev = prev;
+		} else {
+			first_block = current_block = fb;
+		}
+		prev = fb;
+	}
+	current_frame = 0;
+	countdown = 0;
+	done = false;
 }
 
 void recording_t::record(recording_op_t op, uint64 microseconds, uint64 arg)
@@ -114,16 +128,21 @@ void recording_t::dump(void)
 void recording_t::save(void)
 {
 	int fd = open("recording", O_WRONLY | O_CREAT, 0666);
-	D(bug("writing recording\n"));
 	if (fd < 0) {
 		perror("save: open:");
 		return;
 	}
+	save_to(fd);
+	close(fd);
+}
+
+void recording_t::save_to(int fd)
+{
+	D(bug("writing recording\n"));
 	write_exactly(&header, fd, sizeof header);
 	for (recording_frame_block_t *b = first_block; b; b = b->next) {
 		write_exactly(b, fd, sizeof *b);
 	}
-	close(fd);
 }
 
 void recording_t::play_through(uint64 end)
@@ -166,6 +185,16 @@ void recording_t::play_through(uint64 end)
 			break;
 		}
 	} while (1);
+}
+
+void recording_t::advance_to_end()
+{
+	recording_frame_block_t *fb = first_block;
+	while (fb->next) fb = fb->next;
+	current_block = fb;
+	current_frame = 0;
+	while (!advance_frame());
+	D(bug("advanced to %hu\n", current_frame));
 }
 
 void recording_t::rewind_clearing(uint64 end)

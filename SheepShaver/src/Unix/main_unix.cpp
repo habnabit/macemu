@@ -1571,16 +1571,14 @@ void TriggerInterrupt(void)
  *  Interrupt flags (must be handled atomically!)
  */
 
-volatile uint32 InterruptFlags = 0;
-
 void SetInterruptFlag(uint32 flag)
 {
-	atomic_or((int *)&InterruptFlags, flag);
+	atomic_or((int *)&the_app->interrupt_flags, flag);
 }
 
 void ClearInterruptFlag(uint32 flag)
 {
-	atomic_and((int *)&InterruptFlags, ~flag);
+	atomic_and((int *)&the_app->interrupt_flags, ~flag);
 }
 
 

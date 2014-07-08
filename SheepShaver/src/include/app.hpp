@@ -81,6 +81,10 @@ enum save_op_t {
 	OP_LOAD_STATE
 };
 
+enum recording_types_t {
+	HAS_RECORD_RECORDING = 1 << 0,
+};
+
 class sheepshaver_state
 {
 public:
@@ -130,6 +134,8 @@ public:
 
 	bool tick_stepping;
 	uint8 tick_step;
+
+	volatile uint32 interrupt_flags;
 };
 
 extern sheepshaver_state *the_app;

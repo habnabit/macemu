@@ -881,3 +881,17 @@ void powerpc_cpu::invalidate_cache_range(uintptr start, uintptr end)
 	my_block_cache.clear_range(start, end);
 #endif
 }
+
+void powerpc_cpu::save_to(int fd)
+{
+	write_exactly(regs_ptr(), fd, sizeof(powerpc_registers));
+	write_exactly(&cycles, fd, sizeof cycles);
+	write_exactly(&period_cycles, fd, sizeof period_cycles);
+}
+
+void powerpc_cpu::load_from(int fd)
+{
+	read_exactly(regs_ptr(), fd, sizeof(powerpc_registers));
+	read_exactly(&cycles, fd, sizeof cycles);
+	read_exactly(&period_cycles, fd, sizeof period_cycles);
+}

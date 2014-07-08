@@ -36,6 +36,7 @@ public:
 	recording_frame_block_t *next;
 
 	recording_frame_block_t();
+	~recording_frame_block_t();
 	void dump(void);
 	void clear(void);
 	void clear_to_end(uint16);
@@ -55,10 +56,13 @@ public:
 
 	recording_t(time_state_t *);
 	recording_t(const char *);
+	recording_t(int);
 	~recording_t();
+	void load_from(int);
 	void record(recording_op_t op, uint64 microseconds, uint64 arg);
 	void dump(void);
 	void save(void);
+	void save_to(int);
 
 	inline recording_frame_t *current_frame_ptr(void)
 	{
@@ -93,10 +97,8 @@ public:
 	}
 
 	void play_through(uint64 end);
+	void advance_to_end(void);
 	void rewind_clearing(uint64);
-
-private:
-	recording_frame_block_t *_blocks;
 };
 
 #endif

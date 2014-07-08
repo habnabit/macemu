@@ -82,17 +82,22 @@ void sheepshaver_state::do_save_load(void)
 		write_exactly(Mac2HostAddr(KERNEL_DATA2_BASE), fd, KERNEL_AREA_SIZE);
 		write_exactly(Mac2HostAddr(DR_EMULATOR_BASE), fd, DR_EMULATOR_SIZE);
 		write_exactly(Mac2HostAddr(DR_CACHE_BASE), fd, DR_CACHE_SIZE);
+		write_exactly((void *)&interrupt_flags, fd, sizeof interrupt_flags);
 		write_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		write_exactly(&time_state, fd, sizeof time_state);
 		write_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
 		if (video_buffer_size) {
 			write_exactly(video_buffer, fd, video_buffer_size);
 		}
-		write_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
-		write_exactly(&ppc_cpu->cycles, fd, sizeof ppc_cpu->cycles);
-		write_exactly(&ppc_cpu->period_cycles, fd, sizeof ppc_cpu->period_cycles);
 		write_exactly(&video_state, fd, sizeof video_state);
 		save_descs(fd);
+		ppc_cpu->save_to(fd);
+		uint8 recording_types = 0;
+		if (record_recording) recording_types |= HAS_RECORD_RECORDING;
+		write_exactly(&recording_types, fd, sizeof recording_types);
+		if (record_recording) {
+			record_recording->save_to(fd);
+		}
 	} else if (save_op == OP_LOAD_STATE) {
 		if ((fd = open(filename, O_RDONLY)) < 0) {
 			perror("do_save_load: open");
@@ -106,6 +111,7 @@ void sheepshaver_state::do_save_load(void)
 		read_exactly(Mac2HostAddr(KERNEL_DATA2_BASE), fd, KERNEL_AREA_SIZE);
 		read_exactly(Mac2HostAddr(DR_EMULATOR_BASE), fd, DR_EMULATOR_SIZE);
 		read_exactly(Mac2HostAddr(DR_CACHE_BASE), fd, DR_CACHE_SIZE);
+		read_exactly((void *)&interrupt_flags, fd, sizeof interrupt_flags);
 		read_exactly(&macos_tvect, fd, sizeof macos_tvect);
 		read_exactly(&time_state, fd, sizeof time_state);
 		read_exactly(&video_buffer_size, fd, sizeof video_buffer_size);
@@ -116,18 +122,20 @@ void sheepshaver_state::do_save_load(void)
 			video_buffer = (uint8 *)malloc(video_buffer_size);
 			read_exactly(video_buffer, fd, video_buffer_size);
 		}
-		read_exactly(ppc_cpu->regs_ptr(), fd, sizeof(powerpc_registers));
-		read_exactly(&ppc_cpu->cycles, fd, sizeof ppc_cpu->cycles);
-		read_exactly(&ppc_cpu->period_cycles, fd, sizeof ppc_cpu->period_cycles);
 		read_exactly(&video_state, fd, sizeof video_state);
 		load_descs(fd);
+		ppc_cpu->load_from(fd);
+		uint8 recording_types = 0;
+		read_exactly(&recording_types, fd, sizeof recording_types);
+		if (recording_types & HAS_RECORD_RECORDING) {
+			if (record_recording) delete record_recording;
+			record_recording = new recording_t(fd);
+			record_recording->advance_to_end();
+		}
 		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
 		tick_stepping = true;
-		if (record_recording) {
-			record_recording->rewind_clearing(time_state.microseconds);
-		}
 	}
 	close(fd);
 }

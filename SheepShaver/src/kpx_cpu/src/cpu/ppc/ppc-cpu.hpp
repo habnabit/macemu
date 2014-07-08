@@ -130,6 +130,8 @@ public:
 	uint64 jit_cycles;
 	uint64 next;
 	void inc_cycles(void);
+	void save_to(int);
+	void load_from(int);
 
 protected:
 
