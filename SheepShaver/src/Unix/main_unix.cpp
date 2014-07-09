@@ -1201,7 +1201,8 @@ static bool kernel_data_init(void)
 static bool shm_map_address(int kernel_area, uint32 addr)
 {
 	void *kernel_addr = Mac2HostAddr(addr);
-	return shmat(kernel_area, kernel_addr, 0) == kernel_addr;
+	void *mapped = shmat(kernel_area, kernel_addr, 0);
+	return mapped == kernel_addr;
 }
 
 

@@ -48,10 +48,10 @@ AC_ARG_WITH(gtk,            [  --with-gtk              use GTK user interface [d
 AC_ARG_WITH(mon,            [  --with-mon              use mon as debugger [default=yes]], [WANT_MON=$withval], [WANT_MON=yes])
 AC_ARG_WITH(dgcc,           [  --with-dgcc=COMPILER    use C++ COMPILER to compile synthetic opcodes], [DYNGEN_CC=$withval])
 
-AC_ARG_WITH(bincue,   
+AC_ARG_WITH(bincue,
   AS_HELP_STRING([--with-bincue], [Allow cdrom image files in bin/cue mode]))
 
-AC_ARG_WITH(libvhd,   
+AC_ARG_WITH(libvhd,
   AS_HELP_STRING([--with-libvhd], [Enable VHD disk images]))
 
 
@@ -669,7 +669,7 @@ AS_IF([test  "x$have_libvhd" = "xyes" ], [
 	   LIBS="$LIBS -lvhd"
 	   case $target_os in
 	   linux*)
-	   LIBS="$LIBS -luuid" 
+	   LIBS="$LIBS -luuid"
 	   esac
 	   AC_CHECK_LIB(vhd, vhd_open)
 	   AC_CHECK_LIB(vhd, vhd_io_read)
@@ -939,7 +939,7 @@ fi dnl HAVE_MMAP_VM
 dnl Check if we can modify the __PAGEZERO segment for use as Low Memory
 AC_CACHE_CHECK([whether __PAGEZERO can be Low Memory area 0x0000-0x3000],
   ac_cv_pagezero_hack, [
-  ac_cv_pagezero_hack=no 
+  ac_cv_pagezero_hack=no
   if AC_TRY_COMMAND([Darwin/testlmem.sh 0x3000]); then
     ac_cv_pagezero_hack=yes
     dnl might as well skip the test for mmap-able low memory
@@ -1211,7 +1211,7 @@ int main(void)
 #ifdef NATMEM_OFFSET
 	unsigned long ofs = NATMEM_OFFSET;
 #else
-	for (unsigned long ofs = 0x10000000; ofs <= 0x90000000; ofs += 0x10000000)
+	for (unsigned long ofs = 0x10000000; ofs <= 0x400000000; ofs += 0x10000000)
 #endif
 	for (int i = 0; i < n_ranges; i++) {
 		char *m = (char *)(ranges[[i]].base + ofs);
