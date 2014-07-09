@@ -100,7 +100,7 @@ public:
 
 	int save_slot;
 	save_op_t save_op;
-	void save_state(int);
+	void save_state(void);
 	void load_state(int);
 	void do_save_load(void);
 

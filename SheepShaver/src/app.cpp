@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <errno.h>
 #include <strings.h>
+#include <dirent.h>
 #include "sysdeps.h"
 #include "adb.h"
 #include "app.hpp"
@@ -51,16 +52,39 @@ void write_exactly(void *src, int fd, size_t length)
 	}
 }
 
-void sheepshaver_state::save_state(int slot)
+static int determine_highest_savestate(void)
 {
-	save_slot = slot;
+	int highest = 0;
+	DIR *dir;
+	struct dirent *dp;
+
+	if (!(dir = opendir("."))) {
+		perror("determine_highest_savestate: opendir");
+		return -1;
+	}
+	while ((dp = readdir(dir))) {
+		int cur;
+		if (sscanf(dp->d_name, "%d.save", &cur) != 1) continue;
+		if (cur > highest) highest = cur;
+	}
+	closedir(dir);
+	return highest;
+}
+
+void sheepshaver_state::save_state(void)
+{
+	if ((save_slot = determine_highest_savestate()) < 0) return;
+	++save_slot;
+	D(bug("saving %d\n", save_slot));
 	save_op = OP_SAVE_STATE;
 	do_save_load();
 }
 
 void sheepshaver_state::load_state(int slot)
 {
-	save_slot = slot;
+	if ((save_slot = determine_highest_savestate()) < 0) return;
+	save_slot -= slot;
+	D(bug("loading %d\n", save_slot));
 	save_op = OP_LOAD_STATE;
 	do_save_load();
 }

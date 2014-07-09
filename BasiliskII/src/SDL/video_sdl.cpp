@@ -1693,26 +1693,24 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 
 	case SDLK_ESCAPE: if (is_ctrl_down(ks)) {if (!key_down) { quit_full_screen = true; emerg_quit = true; } return -2;} else return 0x35;
 
-#define SAVESTATE(n) \
-		if (!key_down) {												\
-			D(bug("saving %d\n", (n)));									\
-			the_app->save_state(n);										\
-		}																\
+	case SDLK_F1:
+		if (!key_down) {
+			the_app->save_state();
+		}
 		return -2;
+
 #define LOADSTATE(n) \
 		if (!key_down) {												\
-			D(bug("loading %d\n", (n)));								\
 			the_app->load_state(n);										\
 		}																\
 		return -2;
-	case SDLK_F1: SAVESTATE(0)
-	case SDLK_F2: SAVESTATE(1)
-	case SDLK_F3: SAVESTATE(2)
-	case SDLK_F4: SAVESTATE(3)
-	case SDLK_F5: LOADSTATE(0)
-	case SDLK_F6: LOADSTATE(1)
-	case SDLK_F7: LOADSTATE(2)
-	case SDLK_F8: LOADSTATE(3)
+	case SDLK_F2: LOADSTATE(0)
+	case SDLK_F3: LOADSTATE(1)
+	case SDLK_F4: LOADSTATE(2)
+	case SDLK_F5: LOADSTATE(3)
+	case SDLK_F6: LOADSTATE(4)
+	case SDLK_F7: LOADSTATE(5)
+	case SDLK_F8: LOADSTATE(6)
 	case SDLK_F9:
 		if (!key_down && the_app->record_recording) {
 			the_app->record_recording->save();
