@@ -99,6 +99,7 @@ void sheepshaver_state::do_save_load(void)
 		if (record_recording) recording_types |= HAS_RECORD_RECORDING;
 		write_exactly(&recording_types, fd, sizeof recording_types);
 		if (record_recording) {
+			record(OP_INVALIDATE_CACHE, 0);
 			record_recording->save_to(fd);
 		}
 	} else if (save_op == OP_LOAD_STATE) {
@@ -136,12 +137,13 @@ void sheepshaver_state::do_save_load(void)
 			record_recording = new recording_t(fd);
 			record_recording->advance_to_end();
 		}
-		ppc_cpu->invalidate_cache();
 		reopen_video();
 		video_set_palette();
 		memset(keys_down, 0, sizeof keys_down);
 		tick_stepping = true;
+		tick_step = 0;
 	}
+	ppc_cpu->invalidate_cache();
 	close(fd);
 }
 

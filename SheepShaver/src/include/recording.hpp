@@ -12,7 +12,8 @@ enum recording_op_t {
 	OP_KEY_UP,
 	OP_MOUSE_DOWN,
 	OP_MOUSE_UP,
-	OP_MOUSE_XY
+	OP_MOUSE_XY,
+	OP_INVALIDATE_CACHE
 };
 
 struct recording_header_t

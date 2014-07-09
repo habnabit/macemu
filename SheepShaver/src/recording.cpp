@@ -176,6 +176,9 @@ void recording_t::play_through(uint64 end)
 		case OP_MOUSE_XY:
 			ADBMouseMoved(f->arg & 0xffffffff, f->arg >> 32);
 			break;
+		case OP_INVALIDATE_CACHE:
+			the_app->ppc_cpu->invalidate_cache();
+			break;
 		default:
 			D(bug("invalid op: %d", f->op));
 		}
