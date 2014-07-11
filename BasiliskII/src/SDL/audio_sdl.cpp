@@ -29,8 +29,10 @@
 #include <SDL_mutex.h>
 #include <SDL_audio.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
+
+#include "app.hpp"
 
 #if defined(BINCUE)
 #include "bincue_unix.h"
@@ -60,6 +62,7 @@ static void set_audio_status_format(void)
 	AudioStatus.sample_rate = audio_sample_rates[audio_sample_rate_index];
 	AudioStatus.sample_size = audio_sample_sizes[audio_sample_size_index];
 	AudioStatus.channels = audio_channel_counts[audio_channel_count_index];
+	AudioStatus.period = 4096 * 60 * CYCLES_PER_60HZ / (AudioStatus.sample_rate >> 16) / AudioStatus.channels;
 }
 
 // Init SDL audio system
@@ -194,41 +197,30 @@ void audio_exit_stream()
 
 static void stream_func(void *arg, uint8 *stream, int stream_len)
 {
+	static uint64 start = 0, bytes = 0, next = 0;
+	if (start == 0) start = GetTicks_usec();
+
 	if (AudioStatus.num_sources) {
-
-		// Trigger audio interrupt to get new buffer
-		D(bug("stream: triggering irq\n"));
-		SetInterruptFlag(INTFLAG_AUDIO);
-		D(bug("stream: waiting for ack\n"));
-		SDL_SemWait(audio_irq_done_sem);
-		D(bug("stream: ack received\n"));
-
-		// Get size of audio data
-		uint32 apple_stream_info = ReadMacInt32(audio_data + adatStreamInfo);
-		if (apple_stream_info) {
-			int work_size = ReadMacInt32(apple_stream_info + scd_sampleCount) * (AudioStatus.sample_size >> 3) * AudioStatus.channels;
-			D(bug("stream: work_size %d\n", work_size));
-			if (work_size > stream_len)
-				work_size = stream_len;
-			if (work_size == 0)
-				goto silence;
-
-			// Send data to audio device
-			Mac2Host_memcpy(stream, ReadMacInt32(apple_stream_info + scd_buffer), work_size);
-			if (work_size != stream_len)
-				memset((uint8 *)stream + work_size, silence_byte, stream_len - work_size);
-			D(bug("stream: data written\n"));
-		} else
-			goto silence;
-
+		//SDL_SemWait(audio_irq_done_sem);
+		size_t bytes_copied = the_app->copy_audio_out(stream, stream_len);
+		D(bug("copied %zu bytes out\n", bytes_copied));
+		if (bytes_copied != stream_len) {
+			memset((uint8 *)stream + bytes_copied, silence_byte, stream_len - bytes_copied);
+		}
 	} else {
-
 		// Audio not active, play silence
-silence: memset(stream, silence_byte, stream_len);
+		memset(stream, silence_byte, stream_len);
 	}
 #if defined(BINCUE)
 	MixAudio_bincue(stream, stream_len);
 #endif
+
+	bytes += stream_len;
+	uint64 now = GetTicks_usec();
+	if (now > next) {
+		D(bug("%lu bytes in %lu usec = %f bytes/sec\n", bytes, now - start, bytes * 1000000.0 / (now - start)));
+		next = now + 5000000;
+	}
 }
 
 
@@ -238,21 +230,23 @@ silence: memset(stream, silence_byte, stream_len);
 
 void AudioInterrupt(void)
 {
-	D(bug("AudioInterrupt\n"));
-
 	// Get data from apple mixer
 	if (AudioStatus.mixer) {
 		M68kRegisters r;
 		r.a[0] = audio_data + adatStreamInfo;
 		r.a[1] = AudioStatus.mixer;
 		Execute68k(audio_data + adatGetSourceData, &r);
-		D(bug(" GetSourceData() returns %08lx\n", r.d[0]));
+
+		// Get size of audio data
+		uint32 apple_stream_info = ReadMacInt32(audio_data + adatStreamInfo);
+		if (apple_stream_info) {
+			int work_size = ReadMacInt32(apple_stream_info + scd_sampleCount) * (AudioStatus.sample_size >> 3) * AudioStatus.channels;
+			size_t bytes_copied = the_app->copy_audio_in(Mac2HostAddr(ReadMacInt32(apple_stream_info + scd_buffer)), work_size);
+			D(bug("copied %zu bytes in\n", bytes_copied));
+			//SDL_SemPost(audio_irq_done_sem);
+		}
 	} else
 		WriteMacInt32(audio_data + adatStreamInfo, 0);
-
-	// Signal stream function
-	SDL_SemPost(audio_irq_done_sem);
-	D(bug("AudioInterrupt done\n"));
 }
 
 

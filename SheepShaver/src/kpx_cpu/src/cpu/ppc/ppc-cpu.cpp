@@ -27,6 +27,8 @@
 #ifndef SHEEPSHAVER
 #include "basic-kernel.hpp"
 #include "video.h"
+#else
+#include "audio.h"
 #endif
 
 #if PPC_ENABLE_JIT
@@ -42,8 +44,6 @@
 #include "debug.h"
 
 #include "app.hpp"
-
-#define CYCLES_PER_60HZ 5000
 
 
 #if PPC_PROFILE_GENERIC_CALLS
@@ -270,7 +270,7 @@ void powerpc_cpu::initialize()
 	init_decode_cache();
 	execute_depth = 0;
 	execute_start_time = clock();
-	cycles = period_cycles = 0;
+	cycles = audio_period_cycles = via_period_cycles = 0;
 	next = GetTicks_usec();
 
 	// Initialize block lookup table
@@ -579,8 +579,15 @@ void *powerpc_cpu::compile_chain_block(block_info *sbi)
 inline void powerpc_cpu::inc_cycles(void)
 {
 	++cycles;
-	if (++period_cycles < CYCLES_PER_60HZ) return;
-	period_cycles = 0;
+
+	if (AudioStatus.num_sources && ++audio_period_cycles >= AudioStatus.period) {
+		audio_period_cycles = 0;
+		SetInterruptFlag(INTFLAG_AUDIO);
+		trigger_interrupt();
+	}
+
+	if (++via_period_cycles < CYCLES_PER_60HZ) return;
+	via_period_cycles = 0;
 
 	the_app->advance_microseconds(16625);
 	do {
@@ -627,7 +634,7 @@ void powerpc_cpu::execute(uint32 entry)
 				for (;;) {
 					jit_cycles = 0;
 					codegen.execute(bi->entry_point);
-					inc_cycles();
+					if (execute_depth == 1) inc_cycles();
 
 					if (!spcflags().empty()) {
 						switch (check_spcflags()) {
@@ -882,12 +889,14 @@ void powerpc_cpu::save_to(int fd)
 {
 	write_exactly(regs_ptr(), fd, sizeof(powerpc_registers));
 	write_exactly(&cycles, fd, sizeof cycles);
-	write_exactly(&period_cycles, fd, sizeof period_cycles);
+	write_exactly(&audio_period_cycles, fd, sizeof audio_period_cycles);
+	write_exactly(&via_period_cycles, fd, sizeof via_period_cycles);
 }
 
 void powerpc_cpu::load_from(int fd)
 {
 	read_exactly(regs_ptr(), fd, sizeof(powerpc_registers));
 	read_exactly(&cycles, fd, sizeof cycles);
-	read_exactly(&period_cycles, fd, sizeof period_cycles);
+	read_exactly(&audio_period_cycles, fd, sizeof audio_period_cycles);
+	read_exactly(&via_period_cycles, fd, sizeof via_period_cycles);
 }

@@ -12,6 +12,7 @@
 #include "recording.hpp"
 #include "cpu/ppc/ppc-cpu.hpp"
 
+#define CYCLES_PER_60HZ 5000
 #define MAX_KEYSYM 256
 
 
@@ -158,6 +159,13 @@ public:
 	{
 		key_state_changed(code, false);
 	}
+
+	uint8 *audio_buffer;
+	uint8 *audio_buffer_end;
+	uint8 *audio_read_ptr;
+	uint8 *audio_write_ptr;
+	size_t copy_audio_in(uint8 *, size_t);
+	size_t copy_audio_out(uint8 *, size_t);
 };
 
 extern sheepshaver_state *the_app;

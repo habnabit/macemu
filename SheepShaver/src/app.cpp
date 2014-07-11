@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <strings.h>
 #include <dirent.h>
@@ -11,10 +11,16 @@
 #include "debug.h"
 
 
+#define AUDIO_BUFFER_SIZE 1048577
+
+
 sheepshaver_state::sheepshaver_state()
 {
 	memset(this, 0, sizeof *this);
 	time_state.base_time = 3487370000;
+	audio_buffer = (uint8 *)malloc(AUDIO_BUFFER_SIZE);
+	audio_buffer_end = audio_buffer + AUDIO_BUFFER_SIZE;
+	audio_read_ptr = audio_write_ptr = audio_buffer;
 }
 
 void sheepshaver_state::initialize_tvect(void)
@@ -213,4 +219,67 @@ void sheepshaver_state::calculate_key_differences(void)
 			keys_actually_down[i] = keys_down[i];
 		}
 	}
+}
+
+
+size_t sheepshaver_state::copy_audio_in(uint8 *buf, size_t size)
+{
+	if (size == 0) return 0;
+	if (size >= AUDIO_BUFFER_SIZE) size = AUDIO_BUFFER_SIZE - 1;
+	if (audio_write_ptr < audio_read_ptr) {
+		if (audio_write_ptr + size >= audio_read_ptr) {
+			size = audio_read_ptr - audio_write_ptr - 1;
+		}
+		memcpy(audio_write_ptr, buf, size);
+		audio_write_ptr += size;
+		return size;
+	}
+	size_t split_rhs = audio_buffer_end - audio_write_ptr;
+	if (size <= split_rhs) {
+		memcpy(audio_write_ptr, buf, size);
+		audio_write_ptr += size;
+		if (audio_write_ptr == audio_buffer_end) audio_write_ptr = audio_buffer;
+		return size;
+	}
+	size_t split_lhs = size - split_rhs;
+	if (split_lhs + audio_buffer >= audio_read_ptr) {
+		size = audio_read_ptr - audio_buffer - 1 + split_rhs;
+		if (size == 0) return 0;
+		split_lhs = size - split_rhs;
+	}
+	memcpy(audio_write_ptr, buf, split_rhs);
+	memcpy(audio_buffer, buf + split_rhs, split_lhs);
+	audio_write_ptr = audio_buffer + split_lhs;
+	return size;
+}
+
+size_t sheepshaver_state::copy_audio_out(uint8 *buf, size_t size)
+{
+	if (audio_write_ptr == audio_read_ptr || size == 0) return 0;
+	if (size >= AUDIO_BUFFER_SIZE) size = AUDIO_BUFFER_SIZE - 1;
+	if (audio_read_ptr < audio_write_ptr) {
+		if (audio_read_ptr + size > audio_write_ptr) {
+			size = audio_write_ptr - audio_read_ptr;
+		}
+		memcpy(buf, audio_read_ptr, size);
+		audio_read_ptr += size;
+		return size;
+	}
+	size_t split_rhs = audio_buffer_end - audio_read_ptr;
+	if (size <= split_rhs) {
+		memcpy(buf, audio_read_ptr, size);
+		audio_read_ptr += size;
+		if (audio_read_ptr == audio_buffer_end) audio_read_ptr = audio_buffer;
+		return size;
+	}
+	size_t split_lhs = size - split_rhs;
+	if (split_lhs + audio_buffer > audio_write_ptr) {
+		size = audio_write_ptr - audio_buffer + split_rhs;
+		if (size == 0) return 0;
+		split_lhs = size - split_rhs;
+	}
+	memcpy(buf, audio_read_ptr, split_rhs);
+	memcpy(buf + split_rhs, audio_buffer, split_lhs);
+	audio_read_ptr = audio_buffer + split_lhs;
+	return size;
 }

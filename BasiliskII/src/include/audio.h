@@ -67,6 +67,7 @@ struct audio_status {
 	uint32 channels;		// 1 (mono) or 2 (stereo)
 	uint32 mixer;			// Mac address of Apple Mixer
 	int num_sources;		// Number of active sources
+	uint64 period;
 };
 extern struct audio_status AudioStatus;
 
