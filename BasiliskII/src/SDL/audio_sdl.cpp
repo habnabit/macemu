@@ -29,7 +29,7 @@
 #include <SDL_mutex.h>
 #include <SDL_audio.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include "debug.h"
 
 #include "app.hpp"
@@ -197,9 +197,6 @@ void audio_exit_stream()
 
 static void stream_func(void *arg, uint8 *stream, int stream_len)
 {
-	static uint64 start = 0, bytes = 0, next = 0;
-	if (start == 0) start = GetTicks_usec();
-
 	if (AudioStatus.num_sources) {
 		//SDL_SemWait(audio_irq_done_sem);
 		size_t bytes_copied = the_app->copy_audio_out(stream, stream_len);
@@ -214,13 +211,6 @@ static void stream_func(void *arg, uint8 *stream, int stream_len)
 #if defined(BINCUE)
 	MixAudio_bincue(stream, stream_len);
 #endif
-
-	bytes += stream_len;
-	uint64 now = GetTicks_usec();
-	if (now > next) {
-		D(bug("%lu bytes in %lu usec = %f bytes/sec\n", bytes, now - start, bytes * 1000000.0 / (now - start)));
-		next = now + 5000000;
-	}
 }
 
 
