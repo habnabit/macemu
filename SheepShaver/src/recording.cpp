@@ -162,10 +162,10 @@ void recording_t::play_through(uint64 end)
 		case OP_NO_OP:
 			break;
 		case OP_KEY_DOWN:
-			ADBKeyDown(f->arg);
+			the_app->key_down(f->arg);
 			break;
 		case OP_KEY_UP:
-			ADBKeyUp(f->arg);
+			the_app->key_up(f->arg);
 			break;
 		case OP_MOUSE_DOWN:
 			ADBMouseDown(f->arg);
@@ -178,6 +178,7 @@ void recording_t::play_through(uint64 end)
 			break;
 		case OP_INVALIDATE_CACHE:
 			the_app->ppc_cpu->invalidate_cache();
+			the_app->record(OP_INVALIDATE_CACHE, f->arg);
 			break;
 		default:
 			D(bug("invalid op: %d", f->op));

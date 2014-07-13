@@ -126,6 +126,7 @@ public:
 
 	recording_t *record_recording;
 	recording_t *play_recording;
+	bool pause_after_playback;
 	void start_recording(void);
 	void load_recording(const char *);
 	void advance_microseconds(uint64);

@@ -753,6 +753,9 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "--playback") == 0) {
 			argv[i] = NULL;
 			the_app->load_recording("recording");
+		} else if (strcmp(argv[i], "--pause-after-playback") == 0) {
+			argv[i] = NULL;
+			the_app->pause_after_playback = true;
 		} else if (valid_vmdir(argv[i])) {
 			vmdir = argv[i];
 			argv[i] = NULL;
