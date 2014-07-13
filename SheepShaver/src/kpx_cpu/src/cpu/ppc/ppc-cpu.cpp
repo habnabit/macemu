@@ -580,10 +580,14 @@ inline void powerpc_cpu::inc_cycles(void)
 {
 	++cycles;
 
-	if (AudioStatus.num_sources && ++audio_period_cycles >= AudioStatus.period) {
+	if (++audio_period_cycles >= AudioStatus.period) {
 		audio_period_cycles = 0;
-		SetInterruptFlag(INTFLAG_AUDIO);
-		trigger_interrupt();
+		if (AudioStatus.num_sources) {
+			SetInterruptFlag(INTFLAG_AUDIO);
+			trigger_interrupt();
+		} else {
+			the_app->record_audio();
+		}
 	}
 
 	if (++via_period_cycles < CYCLES_PER_60HZ) return;
@@ -612,7 +616,7 @@ inline void powerpc_cpu::inc_cycles(void)
 	the_app->calculate_key_differences();
 	WriteMacInt32(0x20c, TimerDateTime());
 	trigger_interrupt();
-	the_app->record_frame();
+	the_app->record_video();
 }
 
 void powerpc_cpu::execute(uint32 entry)

@@ -174,7 +174,9 @@ public:
 	void init_video_recording(void);
 	void start_video_recording(int, int, int);
 	void finalize_video_recording(void);
-	void record_frame(void);
+	void record_video(void);
+	void record_audio(uint8 *);
+	void record_audio(void);
 };
 
 extern sheepshaver_state *the_app;

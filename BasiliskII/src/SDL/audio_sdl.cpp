@@ -220,6 +220,7 @@ static void stream_func(void *arg, uint8 *stream, int stream_len)
 
 void AudioInterrupt(void)
 {
+	bool got_audio = false;
 	// Get data from apple mixer
 	if (AudioStatus.mixer) {
 		M68kRegisters r;
@@ -231,12 +232,19 @@ void AudioInterrupt(void)
 		uint32 apple_stream_info = ReadMacInt32(audio_data + adatStreamInfo);
 		if (apple_stream_info) {
 			int work_size = ReadMacInt32(apple_stream_info + scd_sampleCount) * (AudioStatus.sample_size >> 3) * AudioStatus.channels;
-			size_t bytes_copied = the_app->copy_audio_in(Mac2HostAddr(ReadMacInt32(apple_stream_info + scd_buffer)), work_size);
+			uint8 *buffer = Mac2HostAddr(ReadMacInt32(apple_stream_info + scd_buffer));
+			size_t bytes_copied = the_app->copy_audio_in(buffer, work_size);
+			the_app->record_audio(buffer);
 			D(bug("copied %zu bytes in\n", bytes_copied));
+			got_audio = true;
 			//SDL_SemPost(audio_irq_done_sem);
 		}
 	} else
 		WriteMacInt32(audio_data + adatStreamInfo, 0);
+
+	if (!got_audio) {
+		the_app->record_audio();
+	}
 }
 
 

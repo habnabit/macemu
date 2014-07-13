@@ -1223,6 +1223,8 @@ void SDL_monitor_desc::video_close(void)
 	// Close display
 	delete drv;
 	drv = NULL;
+
+	the_app->finalize_video_recording();
 }
 
 void VideoExit(void)

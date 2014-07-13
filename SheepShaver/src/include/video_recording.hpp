@@ -19,11 +19,18 @@ struct video_recording_state_t
 	AVFrame *video_frame;
 	struct SwsContext *sws_context;
 
+	AVStream *audio_stream;
+	AVFrame *audio_frame;
+
 	video_recording_state_t(void);
 	~video_recording_state_t(void);
 
 	bool initialize(uint16, int, int, int);
 	void finalize(void);
+
+	bool add_audio_stream(enum AVCodecID);
+	bool open_audio(void);
+	void write_audio_frame(uint8 *);
 
 	bool add_video_stream(enum AVCodecID, int, int);
 	bool open_video(void);

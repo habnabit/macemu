@@ -32,8 +32,10 @@
 #include "audio.h"
 #include "audio_defs.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include "debug.h"
+
+#include "app.hpp"
 
 
 // Supported sample rates, sizes and channels
@@ -477,7 +479,10 @@ adat_error:	printf("FATAL: audio component data block initialization error\n");
 		// Sound component functions (delegated)
 		case kSoundComponentAddSourceSelect:
 			D(bug(" AddSource\n"));
-			AudioStatus.num_sources++;
+			if (++AudioStatus.num_sources == 1) {
+				D(bug("dumped %lu/%lu cycles\n", the_app->ppc_cpu->audio_period_cycles, AudioStatus.period));
+				the_app->ppc_cpu->audio_period_cycles = 0;
+			}
 			goto delegate;
 
 		case kSoundComponentRemoveSourceSelect:
