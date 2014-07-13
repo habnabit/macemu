@@ -612,6 +612,7 @@ inline void powerpc_cpu::inc_cycles(void)
 	the_app->calculate_key_differences();
 	WriteMacInt32(0x20c, TimerDateTime());
 	trigger_interrupt();
+	the_app->record_frame();
 }
 
 void powerpc_cpu::execute(uint32 entry)

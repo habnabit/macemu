@@ -695,7 +695,7 @@ void driver_base::init()
 		the_buffer_size = (aligned_height + 2) * s->pitch;
 		the_buffer_copy = (uint8 *)calloc(1, the_buffer_size);
 		the_buffer = (uint8 *)vm_acquire_framebuffer(the_buffer_size);
-		D(bug("the_buffer = %p, the_buffer_copy = %p\n", the_buffer, the_buffer_copy));
+		D(bug("the_buffer = %p, the_buffer_copy = %p (%x bytes)\n", the_buffer, the_buffer_copy, the_buffer_size));
 		if (app->video_buffer && app->video_buffer_size == the_buffer_size) {
 			memcpy(the_buffer, app->video_buffer, the_buffer_size);
 			D(bug("restored video buffer\n"));
@@ -993,6 +993,9 @@ bool SDL_monitor_desc::video_open(void)
 #else
 	redraw_thread_active = true;
 #endif
+
+	the_app->start_video_recording(VIDEO_MODE_X, VIDEO_MODE_Y, VIDEO_MODE_DEPTH);
+
 	return true;
 }
 

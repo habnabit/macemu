@@ -21,6 +21,7 @@ sheepshaver_state::sheepshaver_state()
 	audio_buffer = (uint8 *)malloc(AUDIO_BUFFER_SIZE);
 	audio_buffer_end = audio_buffer + AUDIO_BUFFER_SIZE;
 	audio_read_ptr = audio_write_ptr = audio_buffer;
+	init_video_recording();
 }
 
 void sheepshaver_state::initialize_tvect(void)

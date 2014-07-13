@@ -10,6 +10,7 @@
 #include "video.h"
 #include "macos_util.h"
 #include "recording.hpp"
+#include "video_recording.hpp"
 #include "cpu/ppc/ppc-cpu.hpp"
 
 #define CYCLES_PER_60HZ 5000
@@ -167,6 +168,13 @@ public:
 	uint8 *audio_write_ptr;
 	size_t copy_audio_in(uint8 *, size_t);
 	size_t copy_audio_out(uint8 *, size_t);
+
+	uint16 video_nr;
+	video_recording_state_t *video_recording_state;
+	void init_video_recording(void);
+	void start_video_recording(int, int, int);
+	void finalize_video_recording(void);
+	void record_frame(void);
 };
 
 extern sheepshaver_state *the_app;
