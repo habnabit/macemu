@@ -169,6 +169,7 @@ public:
 	size_t copy_audio_in(uint8 *, size_t);
 	size_t copy_audio_out(uint8 *, size_t);
 
+	bool do_record_video;
 	uint16 video_nr;
 	video_recording_state_t *video_recording_state;
 	void init_video_recording(void);

@@ -225,6 +225,7 @@ void sheepshaver_state::init_video_recording(void)
 void sheepshaver_state::start_video_recording(int width, int height, int depth)
 {
 	finalize_video_recording();
+	if (!do_record_video) return;
 	video_recording_state = new video_recording_state_t();
 	if (!video_recording_state->initialize(++video_nr, width, height, depth)) {
 		fprintf(stderr, "error initializing video recording state\n");

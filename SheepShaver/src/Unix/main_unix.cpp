@@ -750,6 +750,9 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "--record") == 0) {
 			argv[i] = NULL;
 			the_app->start_recording();
+		} else if (strcmp(argv[i], "--record-video") == 0) {
+			argv[i] = NULL;
+			the_app->do_record_video = true;
 		} else if (strcmp(argv[i], "--playback") == 0) {
 			argv[i] = NULL;
 			the_app->load_recording("recording");
