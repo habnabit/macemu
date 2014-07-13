@@ -87,7 +87,7 @@ bool video_recording_state_t::add_video_stream(enum AVCodecID codec_id, int widt
 	video_stream = avformat_new_stream(output_context, codec);
 	if (!video_stream) return false;
 	c = video_stream->codec;
-	c->bit_rate = 10000000;
+	c->bit_rate = 100000000;
 	c->width = width;
 	c->height = height;
 	c->time_base.den = 8000;
