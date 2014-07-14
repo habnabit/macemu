@@ -1725,6 +1725,11 @@ static int kc_decode(SDL_keysym const & ks, bool key_down)
 		if (!key_down) {
 			the_app->tick_stepping = !the_app->tick_stepping;
 			D(bug("tick stepping: %d\n", the_app->tick_stepping));
+			if (the_app->tick_stepping && the_app->play_recording) {
+				delete the_app->play_recording;
+				the_app->play_recording = NULL;
+				D(bug("killed playback recording\n"));
+			}
 		}
 		return -2;
 	case SDLK_F11:
