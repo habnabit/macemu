@@ -128,9 +128,11 @@ public:
 	recording_t *record_recording;
 	recording_t *play_recording;
 	bool pause_after_playback;
+	bool fast_playback;
 	void start_recording(void);
 	void load_recording(const char *);
 	void advance_microseconds(uint64);
+	void kill_playback_recording(void);
 
 	inline void record(recording_op_t op, uint64 arg)
 	{

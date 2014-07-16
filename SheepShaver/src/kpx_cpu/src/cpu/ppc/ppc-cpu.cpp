@@ -595,10 +595,12 @@ inline void powerpc_cpu::inc_cycles(void)
 
 	the_app->advance_microseconds(16625);
 	do {
-		next += 16625;
-		int64 delay = next - GetTicks_usec();
-		if (delay > 0) Delay_usec(delay);
-		else if (delay < -16625) next = GetTicks_usec();
+		if (!the_app->fast_playback) {
+			next += 16625;
+			int64 delay = next - GetTicks_usec();
+			if (delay > 0) Delay_usec(delay);
+			else if (delay < -16625) next = GetTicks_usec();
+		}
 
 		if (the_app->tick_stepping) {
 			if (the_app->tick_step) {

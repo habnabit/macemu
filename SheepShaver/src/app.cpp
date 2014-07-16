@@ -200,19 +200,25 @@ void sheepshaver_state::load_recording(const char *filename)
 	D(bug("time_state after  %lu %u\n", time_state.microseconds, time_state.base_time));
 }
 
+void sheepshaver_state::kill_playback_recording(void)
+{
+	delete play_recording;
+	play_recording = NULL;
+	fast_playback = false;
+	if (pause_after_playback) {
+		tick_stepping = true;
+		tick_step = 0;
+		memset(keys_down, 0, sizeof keys_down);
+	}
+}
+
 void sheepshaver_state::advance_microseconds(uint64 delta)
 {
 	time_state.microseconds += delta;
 	if (play_recording) {
 		play_recording->play_through(time_state.microseconds);
 		if (play_recording->done) {
-			delete play_recording;
-			play_recording = NULL;
-			if (pause_after_playback) {
-				tick_stepping = true;
-				tick_step = 0;
-				memset(keys_down, 0, sizeof keys_down);
-			}
+			kill_playback_recording();
 		}
 	}
 }
