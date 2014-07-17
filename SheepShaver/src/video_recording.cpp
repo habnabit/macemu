@@ -161,8 +161,8 @@ bool video_recording_state_t::add_video_stream(enum AVCodecID codec_id, int widt
 	c->bit_rate = 100000000;
 	c->width = width;
 	c->height = height;
-	c->time_base.den = 8000;
-	c->time_base.num = 133;
+	c->time_base.den = 60;
+	c->time_base.num = 1;
 	c->gop_size = 0;
 	c->pix_fmt = AV_PIX_FMT_YUV420P;
 	/* Some formats want stream headers to be separate. */
