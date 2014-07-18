@@ -157,7 +157,7 @@ void recording_t::dump(void)
 
 void recording_t::save(void)
 {
-	int fd = open("recording", O_WRONLY | O_CREAT, 0666);
+	int fd = open("recording", O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd < 0) {
 		perror("save: open:");
 		return;
