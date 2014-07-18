@@ -41,6 +41,8 @@ public:
 	void dump(void);
 	void clear(void);
 	void clear_to_end(uint16);
+	void save_to(int);
+	void load_from(int, uint32 *);
 };
 
 class time_state_t;

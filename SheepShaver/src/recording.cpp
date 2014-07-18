@@ -40,6 +40,32 @@ void recording_frame_block_t::clear_to_end(uint16 frame)
 	memset(&frames[frame], 0, (sizeof *frames) * (RECORDING_BLOCK_FRAMES - frame));
 }
 
+void recording_frame_block_t::save_to(int fd)
+{
+	for (int i = 0; i < RECORDING_BLOCK_FRAMES; ++i) {
+		recording_frame_t *f = &frames[i];
+		unsigned char op = f->op;
+		if (op == OP_NO_OP) break;
+		write_exactly(&op, fd, sizeof op);
+		write_exactly(&f->microseconds, fd, sizeof f->microseconds);
+		write_exactly(&f->arg, fd, sizeof f->arg);
+	}
+}
+
+void recording_frame_block_t::load_from(int fd, uint32 *n_frames)
+{
+	for (int i = 0; i < RECORDING_BLOCK_FRAMES; ++i) {
+		if (!*n_frames) return;
+		*n_frames -= 1;
+		recording_frame_t *f = &frames[i];
+		unsigned char op;
+		read_exactly(&op, fd, sizeof op);
+		f->op = (recording_op_t)op;
+		read_exactly(&f->microseconds, fd, sizeof f->microseconds);
+		read_exactly(&f->arg, fd, sizeof f->arg);
+	}
+}
+
 recording_t::recording_t(time_state_t *time_state)
 {
 	first_block = current_block = new recording_frame_block_t;
@@ -74,10 +100,14 @@ recording_t::recording_t(int fd)
 void recording_t::load_from(int fd)
 {
 	recording_frame_block_t *prev = NULL, *fb = NULL;
-	read_exactly(&header, fd, sizeof header);
-	for (uint32 i = 0; i < header.frame_blocks; ++i) {
+	time_state_t *t = &header.time_state;
+	uint32 frames;
+	read_exactly(&t->microseconds, fd, sizeof t->microseconds);
+	read_exactly(&t->base_time, fd, sizeof t->base_time);
+	read_exactly(&frames, fd, sizeof frames);
+	while (frames) {
 		fb = new recording_frame_block_t;
-		read_exactly(fb, fd, sizeof *fb);
+		fb->load_from(fd, &frames);
 		if (prev) {
 			prev->next = fb;
 			fb->prev = prev;
@@ -139,9 +169,13 @@ void recording_t::save(void)
 void recording_t::save_to(int fd)
 {
 	D(bug("writing recording\n"));
-	write_exactly(&header, fd, sizeof header);
+	time_state_t *t = &header.time_state;
+	uint32 frames = (header.frame_blocks - 1) * RECORDING_BLOCK_FRAMES + current_frame;
+	write_exactly(&t->microseconds, fd, sizeof t->microseconds);
+	write_exactly(&t->base_time, fd, sizeof t->base_time);
+	write_exactly(&frames, fd, sizeof frames);
 	for (recording_frame_block_t *b = first_block; b; b = b->next) {
-		write_exactly(b, fd, sizeof *b);
+		b->save_to(fd);
 	}
 }
 
